@@ -1047,3 +1047,277 @@ final class ExamplesImageGenerationTests: XCTestCase {
         XCTAssertEqual(failureCount, 0, "All examples should generate successfully")
     }
 }
+
+// MARK: - Documentation Image Generation Tests
+
+/// Generates PNG images for MULTILINE_IMPLEMENTATION_NOTES.md and README.md
+/// Includes both single-line and multiline (with width constraint) examples
+final class DocumentationImageGenerationTests: XCTestCase {
+
+    let font = MathFont.latinModernFont
+    let fontSize: CGFloat = 20.0
+
+    /// Get the path to the project's img/ directory
+    private func imgDirectory() -> URL? {
+        let testBundle = Bundle(for: type(of: self))
+        guard let bundlePath = testBundle.bundlePath.components(separatedBy: ".build").first else {
+            let currentPath = FileManager.default.currentDirectoryPath
+            return URL(fileURLWithPath: currentPath).appendingPathComponent("img")
+        }
+        return URL(fileURLWithPath: bundlePath).appendingPathComponent("img")
+    }
+
+    private func saveImageToProject(named name: String, mode: String, pngData: Data) -> Bool {
+        guard let imgDir = imgDirectory() else {
+            print("Could not determine img directory")
+            return false
+        }
+        try? FileManager.default.createDirectory(at: imgDir, withIntermediateDirectories: true)
+
+        let filename = "\(name)-\(mode).png"
+        let fileURL = imgDir.appendingPathComponent(filename)
+
+        do {
+            try pngData.write(to: fileURL)
+            print("Saved: \(fileURL.path)")
+            return true
+        } catch {
+            print("Failed to save \(filename): \(error)")
+            return false
+        }
+    }
+
+    /// Generate an image with optional width constraint for multiline rendering
+    private func generateImage(latex: String, textColor: MTColor, maxWidth: CGFloat = 0) -> (NSError?, MTImage?) {
+        var error: NSError?
+        let mtfont = font.mtfont(size: fontSize)
+
+        guard let mathList = MTMathListBuilder.build(fromString: latex, error: &error), error == nil else {
+            return (error, nil)
+        }
+
+        let displayList: MTMathListDisplay?
+        if maxWidth > 0 {
+            displayList = MTTypesetter.createLineForMathList(mathList, font: mtfont, style: .display, maxWidth: maxWidth)
+        } else {
+            displayList = MTTypesetter.createLineForMathList(mathList, font: mtfont, style: .display)
+        }
+
+        guard let display = displayList else {
+            return (NSError(domain: "SwiftMath", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create display"]), nil)
+        }
+
+        display.textColor = textColor
+
+        let width = max(display.width, maxWidth > 0 ? maxWidth : display.width)
+        let size = CGSize(width: ceil(width) + 10, height: ceil(display.ascent + display.descent) + 10)
+
+        // Position the display
+        display.position = CGPoint(x: 5, y: display.descent + 5)
+
+        #if os(iOS) || os(visionOS)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { rendererContext in
+            rendererContext.cgContext.saveGState()
+            var transform = CGAffineTransform(scaleX: 1, y: -1)
+            transform = transform.translatedBy(x: 0, y: -size.height)
+            rendererContext.cgContext.concatenate(transform)
+            display.draw(rendererContext.cgContext)
+            rendererContext.cgContext.restoreGState()
+        }
+        return (nil, image)
+        #endif
+
+        #if os(macOS)
+        let image = NSImage(size: size, flipped: false) { bounds in
+            guard let context = NSGraphicsContext.current?.cgContext else { return false }
+            context.saveGState()
+            display.draw(context)
+            context.restoreGState()
+            return true
+        }
+        return (nil, image)
+        #endif
+    }
+
+    /// Generate both light and dark mode images for a latex expression
+    private func generateBothModes(name: String, latex: String, maxWidth: CGFloat = 0) -> Bool {
+        // Light mode (black text)
+        let (lightError, lightImage) = generateImage(latex: latex, textColor: MTColor.black, maxWidth: maxWidth)
+        if let error = lightError {
+            print("Failed to render '\(name)' (light): \(error.localizedDescription)")
+            return false
+        }
+        guard let lImage = lightImage, let lightData = lImage.pngData() else {
+            print("No image generated for '\(name)' (light)")
+            return false
+        }
+
+        // Dark mode (white text)
+        let (darkError, darkImage) = generateImage(latex: latex, textColor: MTColor.white, maxWidth: maxWidth)
+        if let error = darkError {
+            print("Failed to render '\(name)' (dark): \(error.localizedDescription)")
+            return false
+        }
+        guard let dImage = darkImage, let darkData = dImage.pngData() else {
+            print("No image generated for '\(name)' (dark)")
+            return false
+        }
+
+        return saveImageToProject(named: name, mode: "light", pngData: lightData) &&
+               saveImageToProject(named: name, mode: "dark", pngData: darkData)
+    }
+
+    /// Generate images for MULTILINE_IMPLEMENTATION_NOTES.md examples
+    func testGenerateMultilineDocImages() throws {
+        // Examples from MULTILINE_IMPLEMENTATION_NOTES.md - Fully Supported Cases
+        let supportedExamples: [(name: String, latex: String, maxWidth: CGFloat)] = [
+            // Simple equations
+            ("multiline-simple", #"a + b + c + d + e + f"#, 150),
+
+            // Mixed text and math
+            ("multiline-mixed", #"\text{Calculate } \Delta = b^{2} - 4ac \text{ with } a=1"#, 200),
+
+            // Long sequences
+            ("multiline-sequence", #"1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10"#, 180),
+
+            // Fractions inline
+            ("multiline-fractions", #"a + \frac{1}{2} + b + \frac{3}{4} + c"#, 180),
+
+            // Radicals inline
+            ("multiline-radicals", #"x + \sqrt{2} + y + \sqrt{3} + z"#, 150),
+
+            // Mixed fractions and radicals
+            ("multiline-mixed-complex", #"a + \frac{1}{2} + \sqrt{3} + b"#, 150),
+
+            // Large operators inline
+            ("multiline-largeops", #"a + \sum x_i + \int f(x)dx + b"#, 200),
+
+            // Delimited expressions
+            ("multiline-delimited", #"(a+b) + \left(\frac{c}{d}\right) + e"#, 180),
+
+            // Colored expressions
+            ("multiline-colored", #"a + \color{red}{b + c + d} + e"#, 150),
+
+            // Scripts
+            ("multiline-scripts", #"a^{2} + b^{2} + c^{2} + d^{2}"#, 120),
+        ]
+
+        var successCount = 0
+        for (name, latex, maxWidth) in supportedExamples {
+            if generateBothModes(name: name, latex: latex, maxWidth: maxWidth) {
+                successCount += 1
+            }
+        }
+
+        print("\n=== Multiline Supported Examples ===")
+        print("Generated: \(successCount * 2) images (\(successCount) examples)")
+
+        // Limited support / edge case examples
+        let limitedExamples: [(name: String, latex: String, maxWidth: CGFloat)] = [
+            // Very long text - shows word breaking
+            ("multiline-longtext", #"\text{This is a very long piece of text that needs to wrap}"#, 200),
+
+            // Accents
+            ("multiline-accents", #"\hat{x} + \tilde{y} + \bar{z}"#, 0),
+        ]
+
+        for (name, latex, maxWidth) in limitedExamples {
+            if generateBothModes(name: name, latex: latex, maxWidth: maxWidth) {
+                successCount += 1
+            }
+        }
+
+        print("Total generated: \(successCount * 2) images")
+    }
+
+    /// Generate images for README.md Line Wrapping section examples
+    func testGenerateReadmeLineWrappingImages() throws {
+        // Examples from README.md Line Wrapping section
+        let examples: [(name: String, latex: String, maxWidth: CGFloat)] = [
+            // Variables
+            ("readme-wrap-variables", #"a b c d e f g h i j k l m n o p"#, 150),
+
+            // Binary operators
+            ("readme-wrap-binops", #"a+b+c+d+e+f+g+h"#, 100),
+
+            // Relations
+            ("readme-wrap-relations", #"a=1, b=2, c=3, d=4, e=5"#, 120),
+
+            // Mixed text and math (discriminant formula)
+            ("readme-wrap-discriminant", #"\text{Calculer }\Delta=b^{2}-4ac\text{ avec }a=1\text{, }b=-1"#, 235),
+
+            // Greek letters
+            ("readme-wrap-greek", #"\alpha+\beta+\gamma+\delta+\epsilon+\zeta"#, 150),
+
+            // Fractions (NEW feature)
+            ("readme-wrap-fractions", #"a+\frac{1}{2}+b+\frac{3}{4}+c"#, 150),
+
+            // Radicals (NEW feature)
+            ("readme-wrap-radicals", #"x+\sqrt{2}+y+\sqrt{3}+z"#, 150),
+
+            // Mixed fractions and radicals (NEW)
+            ("readme-wrap-mixed", #"a+\frac{1}{2}+\sqrt{3}+b"#, 200),
+
+            // Simple arithmetic
+            ("readme-wrap-arithmetic", #"5+10+15+20+25+30+35+40+45+50"#, 150),
+        ]
+
+        var successCount = 0
+        for (name, latex, maxWidth) in examples {
+            if generateBothModes(name: name, latex: latex, maxWidth: maxWidth) {
+                successCount += 1
+            }
+        }
+
+        // Limited support examples (with ⚠️ in README)
+        let limitedExamples: [(name: String, latex: String, maxWidth: CGFloat)] = [
+            // Scripts - limited
+            ("readme-wrap-scripts", #"a^{2}+b^{2}+c^{2}+d^{2}+e^{2}"#, 150),
+
+            // Large operators - show they work now
+            ("readme-wrap-largeops", #"\sum_{i=1}^{n} x_i + \int_{0}^{1} f(x)dx"#, 200),
+
+            // Delimiters - show they work now
+            ("readme-wrap-delim", #"\left(\frac{a}{b}\right) + c"#, 150),
+
+            // Colored - show they work now
+            ("readme-wrap-color", #"a + \color{red}{b} + c"#, 150),
+        ]
+
+        for (name, latex, maxWidth) in limitedExamples {
+            if generateBothModes(name: name, latex: latex, maxWidth: maxWidth) {
+                successCount += 1
+            }
+        }
+
+        print("\n=== README Line Wrapping Examples ===")
+        print("Generated: \(successCount * 2) images (\(successCount) examples)")
+    }
+
+    /// Generate comparison images showing before/after line breaking
+    func testGenerateComparisonImages() throws {
+        // Show the same expression with and without width constraint
+        let comparisons: [(name: String, latex: String)] = [
+            ("compare-fractions", #"a + \frac{1}{2} + b + \frac{3}{4} + c + \frac{5}{6} + d"#),
+            ("compare-quadratic", #"x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}"#),
+        ]
+
+        var successCount = 0
+
+        for (name, latex) in comparisons {
+            // Without constraint (single line)
+            if generateBothModes(name: "\(name)-single", latex: latex, maxWidth: 0) {
+                successCount += 1
+            }
+
+            // With constraint (multiline)
+            if generateBothModes(name: "\(name)-multi", latex: latex, maxWidth: 180) {
+                successCount += 1
+            }
+        }
+
+        print("\n=== Comparison Examples ===")
+        print("Generated: \(successCount * 2) images (\(successCount) pairs)")
+    }
+}
