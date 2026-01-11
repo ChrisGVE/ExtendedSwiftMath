@@ -56,11 +56,17 @@ SwiftMath now supports automatic line breaking (multiline display) for mathemati
 ```
 **Works perfectly**: Breaks between operators and variables.
 
+![Simple equation with line breaking](img/multiline-simple-light.png#gh-light-mode-only)
+![Simple equation with line breaking](img/multiline-simple-dark.png#gh-dark-mode-only)
+
 ### ✅ Mixed Text and Math
 ```swift
 "\\text{Calculate } Δ = b^{2} - 4ac \\text{ with } a=1"
 ```
 **Works perfectly**: Breaks between text and math atoms naturally.
+
+![Mixed text and math](img/multiline-mixed-light.png#gh-light-mode-only)
+![Mixed text and math](img/multiline-mixed-dark.png#gh-dark-mode-only)
 
 ### ✅ Long Sequences
 ```swift
@@ -80,6 +86,9 @@ SwiftMath now supports automatic line breaking (multiline display) for mathemati
 ```
 **Now works perfectly**: Fractions stay inline when they fit within width constraint. No longer forces line breaks!
 
+![Fractions inline](img/multiline-fractions-light.png#gh-light-mode-only)
+![Fractions inline](img/multiline-fractions-dark.png#gh-dark-mode-only)
+
 **Implementation**: Lines 701-721 in MTTypesetter.swift
 - Creates fraction display first
 - Checks if adding it would exceed maxWidth
@@ -93,6 +102,9 @@ SwiftMath now supports automatic line breaking (multiline display) for mathemati
 "x + \\sqrt{2} + y + \\sqrt{3} + z"
 ```
 **Now works perfectly**: Radicals stay inline when they fit. Handles both simple radicals and those with degrees (cube roots, etc.).
+
+![Radicals inline](img/multiline-radicals-light.png#gh-light-mode-only)
+![Radicals inline](img/multiline-radicals-dark.png#gh-dark-mode-only)
 
 **Implementation**: Lines 677-705 in MTTypesetter.swift
 - Creates radical display first (including degree if present)
@@ -108,11 +120,17 @@ SwiftMath now supports automatic line breaking (multiline display) for mathemati
 ```
 **Now works perfectly**: Intelligently mixes fractions, radicals, and simple atoms. Each element stays inline if it fits.
 
+![Mixed complex expressions](img/multiline-mixed-complex-light.png#gh-light-mode-only)
+![Mixed complex expressions](img/multiline-mixed-complex-dark.png#gh-dark-mode-only)
+
 ### ✅ Large Operators (NEWLY SUPPORTED!)
 ```swift
 "a + \\sum x_i + \\int f(x)dx + b"
 ```
 **Now works perfectly**: Large operators (∑, ∫, ∏, lim) stay inline when they fit within width constraints. Includes intelligent height checking for operators with limits.
+
+![Large operators inline](img/multiline-largeops-light.png#gh-light-mode-only)
+![Large operators inline](img/multiline-largeops-dark.png#gh-dark-mode-only)
 
 **Implementation**: Lines 729-748 in MTTypesetter.swift
 - Creates operator display first (including limits if present)
@@ -128,6 +146,9 @@ SwiftMath now supports automatic line breaking (multiline display) for mathemati
 ```
 **Now works perfectly**: Delimiters stay inline when they fit. Inner content respects width constraints and can wrap naturally.
 
+![Delimited expressions](img/multiline-delimited-light.png#gh-light-mode-only)
+![Delimited expressions](img/multiline-delimited-dark.png#gh-dark-mode-only)
+
 **Implementation**: Lines 750-776 in MTTypesetter.swift
 - Creates delimited display first with maxWidth propagation
 - Checks if adding it would exceed maxWidth
@@ -141,6 +162,9 @@ SwiftMath now supports automatic line breaking (multiline display) for mathemati
 "a + \\color{red}{b + c + d} + e"
 ```
 **Now works perfectly**: Colored sections stay inline when they fit. Inner content respects width constraints and wraps properly.
+
+![Colored expressions](img/multiline-colored-light.png#gh-light-mode-only)
+![Colored expressions](img/multiline-colored-dark.png#gh-dark-mode-only)
 
 **Implementation**: Lines 622-685 in MTTypesetter.swift (all three color types: .color, .textcolor, .colorBox)
 - Creates colored display first with maxWidth propagation

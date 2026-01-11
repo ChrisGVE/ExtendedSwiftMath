@@ -339,33 +339,39 @@ label.preferredMaxLayoutWidth = 200
 // Protects numbers from being split (e.g., "3.14" stays together)
 ```
 
-#### Remaining Unsupported Cases
+#### Now Fully Supported (Previously Limited)
 
-These atom types still force line breaks (not yet optimized):
+These complex atom types now work with intelligent inline layout:
 
-**⚠️ Large operators (∑, ∫, ∏, lim):**
+**✅ Large operators (∑, ∫, ∏, lim):**
 ```swift
 label.latex = "\\sum_{i=1}^{n} x_i + \\int_{0}^{1} f(x)dx"
-// Each operator forces a new line
+label.preferredMaxLayoutWidth = 200
+// ✅ Operators stay inline when they fit, break intelligently when needed
 ```
 
-**⚠️ Matrices and tables:**
-```swift
-label.latex = "A = \\begin{pmatrix} 1 & 2 \\\\ 3 & 4 \\end{pmatrix}"
-// Matrix always on own line
-```
+![Large operators](img/readme-wrap-largeops-light.png#gh-light-mode-only)
+![Large operators](img/readme-wrap-largeops-dark.png#gh-dark-mode-only)
 
-**⚠️ Delimited expressions (\left...\right):**
+**✅ Delimited expressions (\left...\right):**
 ```swift
 label.latex = "\\left(\\frac{a}{b}\\right) + c"
-// The parenthesized group forces line breaks
+label.preferredMaxLayoutWidth = 150
+// ✅ Delimited groups stay inline when they fit
 ```
 
-**⚠️ Colored expressions:**
+![Delimited expressions](img/readme-wrap-delim-light.png#gh-light-mode-only)
+![Delimited expressions](img/readme-wrap-delim-dark.png#gh-dark-mode-only)
+
+**✅ Colored expressions:**
 ```swift
 label.latex = "a + \\color{red}{b} + c"
-// Colored portion causes line break
+label.preferredMaxLayoutWidth = 150
+// ✅ Colored sections respect width constraints
 ```
+
+![Colored expressions](img/readme-wrap-color-light.png#gh-light-mode-only)
+![Colored expressions](img/readme-wrap-color-dark.png#gh-dark-mode-only)
 
 **⚠️ Math accents (partial support):**
 ```swift
@@ -384,8 +390,6 @@ label.latex = "\\hat{x} + \\tilde{y} + \\bar{z}"
 - Set appropriate `preferredMaxLayoutWidth` based on your layout needs
 
 **DON'T:**
-- Expect natural breaking in expressions with large operators (∑, ∫, etc. - not yet optimized)
-- Expect natural breaking in expressions with \left...\right delimiters (not yet optimized)
 - Use extremely narrow widths (less than ~80pt) which may cause poor breaks
 
 #### Examples
