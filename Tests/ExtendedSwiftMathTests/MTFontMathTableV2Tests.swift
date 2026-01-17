@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import SwiftMath
+@testable import ExtendedSwiftMath
 
 final class MTFontMathTableV2Tests: XCTestCase {
     func testMTFontV2Script() throws {

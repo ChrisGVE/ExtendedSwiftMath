@@ -3,7 +3,7 @@
 //
 
 import XCTest
-@testable import SwiftMath
+@testable import ExtendedSwiftMath
 
 class DebugOverlapTest: XCTestCase {
     func testDebugOverlap() {
