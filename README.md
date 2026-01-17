@@ -1,30 +1,25 @@
-# SwiftMath
+# ExtendedSwiftMath
 
 [![CI](https://github.com/ChrisGVE/ExtendedSwiftMath/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrisGVE/ExtendedSwiftMath/actions/workflows/ci.yml)
 [![Swift 5.9+](https://img.shields.io/badge/Swift-5.9+-F05138.svg?style=flat&logo=swift&logoColor=white)](https://swift.org)
-[![Platforms](https://img.shields.io/badge/Platforms-iOS%20|%20macOS-007AFF.svg?style=flat&logo=apple&logoColor=white)](https://developer.apple.com)
+[![Platforms](https://img.shields.io/badge/Platforms-iOS%2011+%20|%20macOS%2012+-007AFF.svg?style=flat&logo=apple&logoColor=white)](https://developer.apple.com)
+[![SPM Compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg?style=flat&logo=swift&logoColor=white)](https://swift.org/package-manager/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat)](https://opensource.org/licenses/MIT)
+[![GitHub Release](https://img.shields.io/github/v/release/ChrisGVE/ExtendedSwiftMath?style=flat&logo=github)](https://github.com/ChrisGVE/ExtendedSwiftMath/releases)
 
-`SwiftMath` provides a full Swift implementation of [iosMath](https://travis-ci.org/kostub/iosMath) 
-for displaying beautifully rendered math equations in iOS and MacOS applications. It typesets formulae written 
-using LaTeX in a `UILabel` equivalent class. It uses the same typesetting rules as LaTeX and
-so the equations are rendered exactly as LaTeX would render them.
+An extended version of [SwiftMath](https://github.com/mgriebling/SwiftMath) with comprehensive LaTeX symbol coverage, adding missing mathematical symbols, blackboard bold, delimiter sizing, amssymb equivalents, and automatic line wrapping.
 
-Please also check out [SwiftMathDemo](https://github.com/mgriebling/SwiftMathDemo.git) for examples of how to use `SwiftMath`
-from SwiftUI.  
+## Credits
 
-`SwiftMath` is similar to [MathJax](https://www.mathjax.org) or
-[KaTeX](https://github.com/Khan/KaTeX) for the web but for native iOS or MacOS
-applications without having to use a `UIWebView` and Javascript. More
-importantly, it is significantly faster than using a `UIWebView`.
+This library is based on [SwiftMath](https://github.com/mgriebling/SwiftMath) by [Mike Griebling](https://github.com/mgriebling), which itself is a Swift translation of [iosMath](https://github.com/kostub/iosMath) by Kostub Deshmukh. We gratefully acknowledge their foundational work.
 
-`SwiftMath` is a Swift translation of the latest `iosMath` v0.9.5 release but includes bug fixes
-and enhancements like a new \lbar (lambda bar) character and cyrillic alphabet support.
-The original `iosMath` test suites have also been translated to Swift and run without errors.
-Note: Error test conditions are ignored to avoid tagging everything with silly `throw`s.
-Please let me know of any bugs or bug fixes that you find. 
+## Overview
 
-`SwiftMath` prepackages everything needed for direct access via the Swift Package Manager.
+ExtendedSwiftMath provides a full Swift implementation for displaying beautifully rendered math equations in iOS and macOS applications. It typesets formulae written using LaTeX in a `UILabel` equivalent class, using the same typesetting rules as LaTeX so equations are rendered exactly as LaTeX would render them.
+
+ExtendedSwiftMath is similar to [MathJax](https://www.mathjax.org) or [KaTeX](https://github.com/Khan/KaTeX) for the web but for native iOS or macOS applications without having to use a `UIWebView` and Javascript. More importantly, it is significantly faster than using a `UIWebView`.
+
+This library prepackages everything needed for direct access via the Swift Package Manager.
 
 ## Examples
 Here are screenshots of some formulae that were rendered with this library:
@@ -83,11 +78,17 @@ Additionally for MacOS it requires:
 
 ## Installation
 
-### Swift Package
+### Swift Package Manager
 
-`SwiftMath` is available from [SwiftMath](https://github.com/mgriebling/SwiftMath.git). 
-To use it in your code, just add the https://github.com/mgriebling/SwiftMath.git path to
-XCode's package manager.
+Add ExtendedSwiftMath to your Swift package:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/ChrisGVE/ExtendedSwiftMath.git", from: "1.0.0")
+]
+```
+
+Or add it directly in Xcode via File > Add Package Dependencies using `https://github.com/ChrisGVE/ExtendedSwiftMath.git`.
 
 ## Usage
 
@@ -557,8 +558,7 @@ try to tackle the second option.
 
 ### Example
 
-The [SwiftMathDemo](https://github.com/mgriebling/SwiftMathDemo) is a SwiftUI version
-of the Objective-C demo included in `iosMath` that uses `SwiftMath` as a Swift package dependency.
+The original [SwiftMathDemo](https://github.com/mgriebling/SwiftMathDemo) by Mike Griebling demonstrates SwiftUI usage and can be adapted for ExtendedSwiftMath by changing the package dependency URL.
 
 ### Advanced configuration
 
