@@ -1,5 +1,10 @@
 # SwiftMath
 
+[![CI](https://github.com/ChrisGVE/ExtendedSwiftMath/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrisGVE/ExtendedSwiftMath/actions/workflows/ci.yml)
+[![Swift 5.9+](https://img.shields.io/badge/Swift-5.9+-F05138.svg?style=flat&logo=swift&logoColor=white)](https://swift.org)
+[![Platforms](https://img.shields.io/badge/Platforms-iOS%20|%20macOS-007AFF.svg?style=flat&logo=apple&logoColor=white)](https://developer.apple.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat)](https://opensource.org/licenses/MIT)
+
 `SwiftMath` provides a full Swift implementation of [iosMath](https://travis-ci.org/kostub/iosMath) 
 for displaying beautifully rendered math equations in iOS and MacOS applications. It typesets formulae written 
 using LaTeX in a `UILabel` equivalent class. It uses the same typesetting rules as LaTeX and
