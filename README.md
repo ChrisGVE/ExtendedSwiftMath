@@ -1,6 +1,6 @@
 # ExtendedSwiftMath
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-yellow.svg?style=flat)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/ChrisGVE/ExtendedSwiftMath?style=flat&logo=github)](https://github.com/ChrisGVE/ExtendedSwiftMath/releases)
 [![CI](https://github.com/ChrisGVE/ExtendedSwiftMath/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrisGVE/ExtendedSwiftMath/actions/workflows/ci.yml)
 [![SPM Compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg?style=flat&logo=swift&logoColor=white)](https://swift.org/package-manager/)
@@ -698,8 +698,10 @@ For a complete list of features and their implementation status, see [MISSING_FE
 
 ## License
 
-`SwiftMath` is available under the MIT license. See the [LICENSE](./LICENSE)
+`ExtendedSwiftMath` is available under the Apache License 2.0. See the [LICENSE](./LICENSE)
 file for more info.
+
+The original `SwiftMath` is available under the MIT license.
 
 ### Fonts
 This distribution contains the following fonts. These fonts are
