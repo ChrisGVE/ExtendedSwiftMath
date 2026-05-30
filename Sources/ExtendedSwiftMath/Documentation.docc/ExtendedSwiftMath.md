@@ -12,6 +12,13 @@ Key features include:
 - Manual delimiter sizing (`\big`, `\Big`, `\bigg`, `\Bigg`)
 - amssymb equivalents
 - Automatic line wrapping for long equations
+- Over/under annotations (`\overset`, `\underset`, `\stackrel`)
+- Cancellation marks (`\cancel`, `\bcancel`, `\xcancel`)
+- Overlap boxes (`\mathllap`, `\mathrlap`, `\mathclap`)
+- Extensible arrows (`\xrightarrow`, `\xleftarrow`)
+- Generalized fractions (`\genfrac`)
+
+See <doc:FeatureGallery> for rendered examples of the extended commands.
 
 ### Quick Start
 
@@ -45,6 +52,10 @@ struct MathView: UIViewRepresentable {
 ```
 
 ## Topics
+
+### Articles
+
+- <doc:FeatureGallery>
 
 ### Essentials
 

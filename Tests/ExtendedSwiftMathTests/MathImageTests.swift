@@ -1321,3 +1321,83 @@ final class DocumentationImageGenerationTests: XCTestCase {
         print("Generated: \(successCount * 2) images (\(successCount) pairs)")
     }
 }
+
+// MARK: - Extended LaTeX Feature Image Generation
+
+/// Test class to generate gallery images for the extended LaTeX commands added by
+/// this fork (\overset, \underset, \stackrel, \cancel/\bcancel/\xcancel,
+/// \mathllap/\mathrlap/\mathclap, \xrightarrow/\xleftarrow, \genfrac).
+/// Run `swift test --filter testGenerateExtendedFeatureImages` to regenerate the
+/// `extended-*.png` images in the img/ directory.
+final class ExtendedFeatureImageGenerationTests: XCTestCase {
+
+    struct Example {
+        let name: String
+        let latex: String
+        let fontSize: CGFloat
+    }
+
+    /// Get the path to the project's img/ directory.
+    private func projectImageDirectory() -> URL {
+        URL(fileURLWithPath: #file)
+            .deletingLastPathComponent()  // MathImageTests.swift
+            .deletingLastPathComponent()  // ExtendedSwiftMathTests
+            .deletingLastPathComponent()  // Tests
+            .appendingPathComponent("img")
+    }
+
+    func testGenerateExtendedFeatureImages() throws {
+        let examples = [
+            Example(name: "extended-overset", latex: "\\overset{\\text{def}}{=}", fontSize: 40),
+            Example(name: "extended-underset", latex: "\\underset{x \\to 0}{\\lim}", fontSize: 40),
+            Example(name: "extended-stackrel", latex: "A \\stackrel{f}{\\rightarrow} B", fontSize: 40),
+            Example(name: "extended-cancel", latex: "\\frac{\\cancel{x}}{\\cancel{x} + 1}", fontSize: 40),
+            Example(name: "extended-bcancel", latex: "\\bcancel{a + b}", fontSize: 40),
+            Example(name: "extended-xcancel", latex: "\\xcancel{abc}", fontSize: 40),
+            Example(name: "extended-mathrlap", latex: "\\mathrlap{\\,/}{=}", fontSize: 40),
+            Example(name: "extended-mathclap", latex: "\\sum_{\\mathclap{1 \\le i \\le n}} x_i", fontSize: 40),
+            Example(name: "extended-xrightarrow", latex: "A \\xrightarrow[\\text{below}]{\\text{above}} B", fontSize: 40),
+            Example(name: "extended-xleftarrow", latex: "X \\xleftarrow{f} Y", fontSize: 40),
+            Example(name: "extended-genfrac-binom", latex: "\\genfrac{(}{)}{0pt}{}{n}{k}", fontSize: 40),
+            Example(name: "extended-genfrac-thick", latex: "\\genfrac{[}{]}{2pt}{0}{x}{y}", fontSize: 40),
+        ]
+
+        let imgDir = projectImageDirectory()
+        try? FileManager.default.createDirectory(at: imgDir, withIntermediateDirectories: true)
+
+        for example in examples {
+            for darkMode in [false, true] {
+                let textColor: MTColor = darkMode ? .white : .black
+                let fileName = "\(example.name)-\(darkMode ? "dark" : "light").png"
+
+                var image = MathImage(
+                    latex: example.latex,
+                    fontSize: example.fontSize,
+                    textColor: textColor,
+                    labelMode: .display,
+                    textAlignment: .center
+                )
+                image.font = MathFont.latinModernFont
+
+                let (error, mtImage, _) = image.asImage()
+                XCTAssertNil(error, "Failed to render \(example.name): \(String(describing: error))")
+                guard let mtImage = mtImage else {
+                    XCTFail("No image generated for \(example.name)")
+                    continue
+                }
+
+                #if os(macOS)
+                if let tiffData = mtImage.tiffRepresentation,
+                   let bitmap = NSBitmapImageRep(data: tiffData),
+                   let pngData = bitmap.representation(using: .png, properties: [:]) {
+                    try? pngData.write(to: imgDir.appendingPathComponent(fileName))
+                }
+                #else
+                if let pngData = mtImage.pngData() {
+                    try? pngData.write(to: imgDir.appendingPathComponent(fileName))
+                }
+                #endif
+            }
+        }
+    }
+}
