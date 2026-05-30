@@ -75,7 +75,7 @@ public enum MathFont: String, CaseIterable, Identifiable {
         BundleManager.manager.obtainRawMathTable(font: self)
     }
     
-    //Note: Below code are no longer supported, unable to tell if UIFont/NSFont is threadsafe, not used in SwiftMath.
+    //Note: Below code are no longer supported, unable to tell if UIFont/NSFont is threadsafe, not used in ExtendedSwiftMath.
     // #if os(iOS) || os(visionOS)
     // public func uiFont(withSize size: CGFloat) -> UIFont? {
     //     UIFont(name: fontName, size: size)

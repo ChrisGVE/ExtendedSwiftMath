@@ -1,6 +1,6 @@
 # ExtendedSwiftMath
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-yellow.svg?style=flat)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://opensource.org/licenses/Apache-2.0)
 [![GitHub Release](https://img.shields.io/github/v/release/ChrisGVE/ExtendedSwiftMath?style=flat&logo=github)](https://github.com/ChrisGVE/ExtendedSwiftMath/releases)
 [![CI](https://github.com/ChrisGVE/ExtendedSwiftMath/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrisGVE/ExtendedSwiftMath/actions/workflows/ci.yml)
 [![SPM Compatible](https://img.shields.io/badge/SPM-Compatible-brightgreen.svg?style=flat&logo=swift&logoColor=white)](https://swift.org/package-manager/)
@@ -8,11 +8,7 @@
 [![Platforms](https://img.shields.io/badge/Platforms-iOS%2011+%20|%20macOS%2012+-007AFF.svg?style=flat&logo=apple&logoColor=white)](https://developer.apple.com)
 [![Documentation](https://img.shields.io/badge/Documentation-DocC-blue.svg?style=flat&logo=readthedocs&logoColor=white)](https://github.com/ChrisGVE/ExtendedSwiftMath)
 
-An extended version of [SwiftMath](https://github.com/mgriebling/SwiftMath) with comprehensive LaTeX symbol coverage, adding missing mathematical symbols, blackboard bold, delimiter sizing, amssymb equivalents, and automatic line wrapping.
-
-## Credits
-
-This library is based on [SwiftMath](https://github.com/mgriebling/SwiftMath) by [Mike Griebling](https://github.com/mgriebling), which itself is a Swift translation of [iosMath](https://github.com/kostub/iosMath) by Kostub Deshmukh. We gratefully acknowledge their foundational work.
+A comprehensive Swift library for rendering LaTeX math on iOS and macOS, featuring extensive LaTeX symbol coverage including missing mathematical symbols, blackboard bold, delimiter sizing, amssymb equivalents, and automatic line wrapping.
 
 ## Overview
 
@@ -21,6 +17,8 @@ ExtendedSwiftMath provides a full Swift implementation for displaying beautifull
 ExtendedSwiftMath is similar to [MathJax](https://www.mathjax.org) or [KaTeX](https://github.com/Khan/KaTeX) for the web but for native iOS or macOS applications without having to use a `UIWebView` and Javascript. More importantly, it is significantly faster than using a `UIWebView`.
 
 This library prepackages everything needed for direct access via the Swift Package Manager.
+
+> **Related project:** [MarkdownExtendedView](https://github.com/ChrisGVE/MarkdownExtendedView) is built on top of ExtendedSwiftMath and benefits from all the LaTeX extensions it brings, rendering math seamlessly inside Markdown content.
 
 ## Examples
 Here are screenshots of some formulae that were rendered with this library:
@@ -63,7 +61,7 @@ Here are previews of the included fonts:
 ![](img/FontsPreviewLight.png#gh-light-mode-only) 
  
 ## Requirements
-`SwiftMath` works on iOS 11+ or MacOS 12+. It depends
+`ExtendedSwiftMath` works on iOS 11+ or MacOS 12+. It depends
 on the following Apple frameworks:
 
 * Foundation.framework
@@ -99,7 +97,7 @@ an `MTMathUILabel` as follows:
 
 ```swift
 
-import SwiftMath
+import ExtendedSwiftMath
 
 let label = MTMathUILabel()
 label.latex = "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}"
@@ -112,7 +110,7 @@ The following code creates a SwiftUI component called `MathView` encapsulating t
 
 ```swift
 import SwiftUI
-import SwiftMath
+import ExtendedSwiftMath
 
 struct MathView: UIViewRepresentable {
     var equation: String
@@ -157,7 +155,7 @@ For code that works with SwiftUI running natively under MacOS use the following:
 
 ```swift
 import SwiftUI
-import SwiftMath
+import ExtendedSwiftMath
 
 struct MathView: NSViewRepresentable {
     var equation: String
@@ -200,7 +198,7 @@ struct MathView: NSViewRepresentable {
 
 ### Automatic Line Wrapping
 
-`SwiftMath` supports automatic line wrapping (multiline display) for mathematical content. The implementation uses **interatom line breaking** which breaks equations at atom boundaries (between mathematical elements) rather than within them, preserving the semantic structure of the mathematics.
+`ExtendedSwiftMath` supports automatic line wrapping (multiline display) for mathematical content. The implementation uses **interatom line breaking** which breaks equations at atom boundaries (between mathematical elements) rather than within them, preserving the semantic structure of the mathematics.
 
 #### Using Line Wrapping with UIKit/AppKit
 
@@ -238,7 +236,7 @@ VStack(alignment: .leading, spacing: 8) {
 
 #### Line Wrapping Behavior and Capabilities
 
-SwiftMath implements **two complementary line breaking mechanisms**:
+ExtendedSwiftMath implements **two complementary line breaking mechanisms**:
 
 ##### 1. Interatom Line Breaking (Primary)
 Breaks equations **between atoms** (mathematical elements) when content exceeds the width constraint. This is the preferred method as it maintains semantic integrity.
@@ -480,7 +478,7 @@ This is a list of formula types that the library currently supports:
 
 ### LaTeX Math Delimiters
 
-`SwiftMath` now supports all standard LaTeX math delimiters for both inline and display modes. The parser automatically detects and handles these delimiters:
+`ExtendedSwiftMath` supports all standard LaTeX math delimiters for both inline and display modes. The parser automatically detects and handles these delimiters:
 
 #### Inline Math (Text Style)
 Use these delimiters for inline math within text, which renders more compactly:
@@ -545,14 +543,14 @@ if let mathList = mathList {
 
 This is particularly useful when building custom renderers or when you need to respect the user's choice of delimiter style.
 
-Note: SwiftMath only supports the commands in LaTeX's math mode. There is
-also no language support for other than west European langugages and some
+Note: ExtendedSwiftMath only supports the commands in LaTeX's math mode. There is
+also no language support for other than west European languages and some
 Cyrillic characters. There would be two ways to support more languages:
 
-1) Find a math font compatible with `SwiftMath` that contains all the glyphs
+1) Find a math font compatible with `ExtendedSwiftMath` that contains all the glyphs
 for that language.
-2) Add support to `SwiftMath` for standard Unicode fonts that contain all
-langauge glyphs.
+2) Add support to `ExtendedSwiftMath` for standard Unicode fonts that contain all
+language glyphs.
 
 Of these two, the first is much easier.  However, if you want a challenge,
 try to tackle the second option.
@@ -599,7 +597,7 @@ label.font = MTFontManager.fontmanager.termesFont(withSize:20)
 
 This project has 12 fonts bundled with it, but you can use any OTF math
 font. A python script is included that generates the `.plist` files 
-required for an `.otf` font to work with `SwiftMath`.  If you generate
+required for an `.otf` font to work with `ExtendedSwiftMath`.  If you generate
 (and test) any other fonts please contribute them back to this project for
 others to benefit.
 
@@ -699,7 +697,7 @@ For a complete list of features and their implementation status, see [MISSING_FE
 ## License
 
 `ExtendedSwiftMath` is available under the Apache License 2.0. See the [LICENSE](./LICENSE)
-file for more info.
+and [NOTICE](./NOTICE) files for more info.
 
 The original `SwiftMath` is available under the MIT license.
 
@@ -714,3 +712,7 @@ licensed as follows:
     [Open Font License](OFL.txt)
 * [KpMath Light/KpMath Sans](http://scripts.sil.org/OFL):
     [SIL Open Font License](OFL.txt)
+
+## Acknowledgments
+
+ExtendedSwiftMath was inspired by [SwiftMath](https://github.com/mgriebling/SwiftMath) by [Mike Griebling](https://github.com/mgriebling), itself a Swift translation of [iosMath](https://github.com/kostub/iosMath) by Kostub Deshmukh. ExtendedSwiftMath has since been independently rewritten and has taken on a life of its own as a standalone library. We gratefully acknowledge that earlier work for sparking this project.

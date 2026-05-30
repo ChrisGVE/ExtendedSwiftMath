@@ -1,4 +1,4 @@
-# SwiftMath Examples
+# ExtendedSwiftMath Examples
 
 ## Square of sums
 ```LaTeX

@@ -1,6 +1,6 @@
-# SwiftMath Missing Features - Implementation Status
+# ExtendedSwiftMath Missing Features - Implementation Status
 
-This document lists LaTeX features that are **not yet implemented** in SwiftMath, based on comprehensive testing against the LaTeX Mathematics reference.
+This document lists LaTeX features that are **not yet implemented** in ExtendedSwiftMath, based on comprehensive testing against the LaTeX Mathematics reference.
 
 ## Summary
 
@@ -210,7 +210,7 @@ x \, y \: z \; w                  % mixed spacing
 
 All tests use the `MTMathListBuilder.build(fromString:error:)` API and automatically skip with `XCTSkip` when features are not implemented.
 
-**Test File**: `Tests/SwiftMathTests/MTMathListBuilderTests.swift`
+**Test File**: `Tests/ExtendedSwiftMathTests/MTMathListBuilderTests.swift`
 **Test Functions**:
 - `testDisplayStyle()` - ✅ Passed (IMPLEMENTED)
 - `testMiddleDelimiter()` - ⏭️ Skipped (not implemented)
@@ -239,5 +239,5 @@ All tests use the `MTMathListBuilder.build(fromString:error:)` API and automatic
 ---
 
 *Generated: 2025-10-01*
-*SwiftMath Version: Based on iosMath v0.9.5*
+*Baseline reference: iosMath v0.9.5 feature set*
 *Last Updated: 2026-01-11 - Updated \boldsymbol as implemented; added example images*
