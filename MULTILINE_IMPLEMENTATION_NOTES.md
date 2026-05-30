@@ -2,7 +2,7 @@
 
 ## Overview
 
-SwiftMath now supports automatic line breaking (multiline display) for mathematical equations. This document provides technical details about the implementation, supported cases, limitations, and potential areas for improvement.
+ExtendedSwiftMath supports automatic line breaking (multiline display) for mathematical equations. This document provides technical details about the implementation, supported cases, limitations, and potential areas for improvement.
 
 ## Implementation Architecture
 

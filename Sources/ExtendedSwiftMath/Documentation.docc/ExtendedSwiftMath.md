@@ -6,7 +6,7 @@ Render beautifully typeset mathematical equations in iOS and macOS applications 
 
 ExtendedSwiftMath is a comprehensive LaTeX math rendering library for Swift. It provides native rendering of mathematical equations without requiring web views or JavaScript, making it significantly faster and more integrated than web-based solutions.
 
-This library extends [SwiftMath](https://github.com/mgriebling/SwiftMath) with:
+Key features include:
 - Comprehensive LaTeX symbol coverage
 - Blackboard bold characters
 - Manual delimiter sizing (`\big`, `\Big`, `\bigg`, `\Bigg`)
