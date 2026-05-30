@@ -461,6 +461,22 @@ public struct MTMathListBuilder {
                 return nil
             } else if char == "\\" {
                 let command = readCommand()
+                if command == "middle" {
+                    // \middle places a delimiter, stretched to the height of the enclosing
+                    // \left...\right pair, in the middle of the expression.
+                    guard currentInnerAtom != nil else {
+                        self.setError(.missingLeft, message: "\\middle must appear between \\left and \\right")
+                        return nil
+                    }
+                    guard let delim = self.readDelimiter(),
+                          let boundary = MTMathAtomFactory.boundary(forDelimiter: delim) else {
+                        self.setError(.invalidDelimiter, message: "Invalid delimiter following \\middle")
+                        return nil
+                    }
+                    currentInnerAtom!.middleDelimiters.append((index: list.atoms.count, delimiter: boundary))
+                    prevAtom = nil
+                    continue
+                }
                 let done = stopCommand(command, list:list, stopChar:stop)
                 if done != nil {
                     return done

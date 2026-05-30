@@ -63,6 +63,24 @@ final class MTTypesetterTests: XCTestCase {
         XCTAssertEqual(display.width, 11.44, accuracy: 0.01)
     }
 
+    func testMiddleDelimiterRendering() throws {
+        // \middle should typeset without crashing and produce a non-empty display.
+        var error: NSError? = nil
+        let mathList = try XCTUnwrap(
+            MTMathListBuilder.build(fromString: "\\left( \\frac{a}{b} \\middle| \\frac{c}{d} \\right)", error: &error))
+        XCTAssertNil(error)
+        let display = try XCTUnwrap(MTTypesetter.createLineForMathList(mathList, font: self.font, style: .display))
+        XCTAssertGreaterThan(display.width, 0, "Middle-delimiter expression should have width")
+        XCTAssertGreaterThan(display.ascent + display.descent, 0, "Middle-delimiter expression should have height")
+
+        // A bare \left( a \middle| b \right) should be wider than the same without the middle delimiter.
+        let withMiddle = try XCTUnwrap(MTMathListBuilder.build(fromString: "\\left( a \\middle| b \\right)", error: &error))
+        let without = try XCTUnwrap(MTMathListBuilder.build(fromString: "\\left( a b \\right)", error: &error))
+        let dMid = try XCTUnwrap(MTTypesetter.createLineForMathList(withMiddle, font: self.font, style: .display))
+        let dNo = try XCTUnwrap(MTTypesetter.createLineForMathList(without, font: self.font, style: .display))
+        XCTAssertGreaterThan(dMid.width, dNo.width, "Middle delimiter should add width")
+    }
+
     func testMultipleVariables() throws {
         let mathList = MTMathAtomFactory.mathListForCharacters("xyzw")
         let display = MTTypesetter.createLineForMathList(mathList, font: self.font, style: .display)!
