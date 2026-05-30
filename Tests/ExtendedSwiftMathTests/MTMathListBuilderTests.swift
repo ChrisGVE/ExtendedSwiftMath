@@ -2514,6 +2514,17 @@ final class MTMathListBuilderTests: XCTestCase {
         XCTAssertNotNil(badError, "\\middle without \\left should set an error")
     }
 
+    func testBmod() throws {
+        // \bmod renders the upright "mod" operator inline (binary modulo).
+        var error: NSError? = nil
+        let list = try XCTUnwrap(MTMathListBuilder.build(fromString: "a \\bmod b", error: &error))
+        XCTAssertNil(error, "a \\bmod b should parse: \(error?.localizedDescription ?? "")")
+
+        let modAtom = try XCTUnwrap(list.atoms.first { $0.nucleus == "mod" },
+                                    "\\bmod should produce a 'mod' operator atom")
+        XCTAssertEqual(modAtom.type, .largeOperator, "\\bmod should be the mod operator")
+    }
+
     func testSubstack() throws {
         // Test \substack for multi-line subscripts and limits
 
