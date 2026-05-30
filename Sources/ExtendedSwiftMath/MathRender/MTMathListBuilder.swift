@@ -712,6 +712,40 @@ public struct MTMathListBuilder {
                             str += "\\underset{\(mathListToString(overUnder.under))}{\(mathListToString(overUnder.base))}"
                         }
                     }
+                } else if atom.type == .cancel {
+                    if let cancel = atom as? MTCancel {
+                        let command: String
+                        switch cancel.cancelType {
+                        case .forward:  command = "cancel"
+                        case .backward: command = "bcancel"
+                        case .cross:    command = "xcancel"
+                        }
+                        str += "\\\(command){\(mathListToString(cancel.innerList))}"
+                    }
+                } else if atom.type == .overlap {
+                    if let overlap = atom as? MTOverlap {
+                        let command: String
+                        switch overlap.overlapType {
+                        case .left:   command = "mathllap"
+                        case .right:  command = "mathrlap"
+                        case .center: command = "mathclap"
+                        }
+                        str += "\\\(command){\(mathListToString(overlap.innerList))}"
+                    }
+                } else if atom.type == .extensibleArrow {
+                    if let arrow = atom as? MTExtensibleArrow {
+                        let command: String
+                        switch arrow.direction {
+                        case .right:     command = "xrightarrow"
+                        case .left:      command = "xleftarrow"
+                        case .leftRight: command = "xleftrightarrow"
+                        }
+                        str += "\\\(command)"
+                        if let under = arrow.underScript {
+                            str += "[\(mathListToString(under))]"
+                        }
+                        str += "{\(mathListToString(arrow.overScript))}"
+                    }
                 } else if atom.type == .largeOperator {
                     let op = atom as! MTLargeOperator
                     let command = MTMathAtomFactory.latexSymbolName(for: atom)
@@ -1034,6 +1068,24 @@ public struct MTMathListBuilder {
             overlap.overlapType = .center
             overlap.innerList = self.buildInternal(true)
             return overlap
+        } else if command == "cancel" {
+            // \cancel{x} strikes through with a forward diagonal.
+            let cancel = MTCancel()
+            cancel.cancelType = .forward
+            cancel.innerList = self.buildInternal(true)
+            return cancel
+        } else if command == "bcancel" {
+            // \bcancel{x} strikes through with a backward diagonal.
+            let cancel = MTCancel()
+            cancel.cancelType = .backward
+            cancel.innerList = self.buildInternal(true)
+            return cancel
+        } else if command == "xcancel" {
+            // \xcancel{x} strikes through with both diagonals (X).
+            let cancel = MTCancel()
+            cancel.cancelType = .cross
+            cancel.innerList = self.buildInternal(true)
+            return cancel
         } else if command == "overset" {
             // \overset{annotation}{base} places the annotation above the base.
             let overUnder = MTOverUnder()
