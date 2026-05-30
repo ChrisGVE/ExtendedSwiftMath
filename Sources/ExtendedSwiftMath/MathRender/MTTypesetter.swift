@@ -2602,7 +2602,14 @@ class MTTypesetter {
         let arrowGlyphDisplay = MTGlyphDisplay(withGlpyh: variantGlyph, range: arrow.indexRange, font: styleFont)
         arrowGlyphDisplay.ascent = glyphAscent
         arrowGlyphDisplay.descent = glyphDescent
-        arrowGlyphDisplay.width = glyphWidth
+        // If the widest available glyph variant is still narrower than the labels,
+        // stretch it horizontally to span them (same approach as wide accents).
+        if glyphWidth > 0 && glyphWidth < requiredWidth {
+            arrowGlyphDisplay.scaleX = requiredWidth / glyphWidth
+            arrowGlyphDisplay.width = requiredWidth
+        } else {
+            arrowGlyphDisplay.width = glyphWidth
+        }
         // Center the arrow vertically on the math axis.
         arrowGlyphDisplay.shiftDown = 0.5 * (glyphAscent - glyphDescent) - styleFont.mathTable!.axisHeight
 
