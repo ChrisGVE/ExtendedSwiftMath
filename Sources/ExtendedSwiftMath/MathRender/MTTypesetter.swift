@@ -82,6 +82,13 @@ func getInterElementSpaceArrayIndexForType(_ type:MTMathAtomType, row:Bool) -> I
         // Decorative types (accent, underline, overline) are treated as ordinary
         case .accent, .underline, .overline:
             return 0
+        // Over/under annotations, cancelled content and zero-width overlap boxes are
+        // treated as ordinary. \stackrel passes a relation type at layout time.
+        case .overUnder, .cancel, .overlap:
+            return 0
+        // Extensible arrows are relations (like ->) for spacing purposes.
+        case .extensibleArrow:
+            return 3
         // Special types that don't typically participate in spacing are treated as ordinary
         case .boundary, .space, .style, .table:
             return 0
@@ -1318,6 +1325,63 @@ class MTTypesetter {
                     currentPosition.x += display!.width
                     // A table doesn't have subscripts or superscripts
                     
+                case .cancel:
+                    if currentLine.length > 0 {
+                        self.addDisplayLine()
+                    }
+                    self.addInterElementSpace(prevNode, currentType: .ordinary)
+                    atom.type = .ordinary
+                    let cancelAtom = atom as! MTCancel
+                    let cancelDisplay = self.makeCancel(cancelAtom)
+                    cancelDisplay.position = currentPosition
+                    displayAtoms.append(cancelDisplay)
+                    currentPosition.x += cancelDisplay.width
+                    if atom.subScript != nil || atom.superScript != nil {
+                        self.makeScripts(atom, display: cancelDisplay, index: UInt(cancelAtom.indexRange.location), delta: 0)
+                    }
+
+                case .overUnder:
+                    if currentLine.length > 0 {
+                        self.addDisplayLine()
+                    }
+                    let overUnder = atom as! MTOverUnder
+                    // \stackrel is treated as a relation for spacing; others as ordinary.
+                    let ouSpacingType: MTMathAtomType = overUnder.isStackrel ? .relation : .ordinary
+                    self.addInterElementSpace(prevNode, currentType: ouSpacingType)
+                    atom.type = ouSpacingType
+                    let ouDisplay = self.makeOverUnder(overUnder)
+                    ouDisplay.position = currentPosition
+                    displayAtoms.append(ouDisplay)
+                    currentPosition.x += ouDisplay.width
+                    if atom.subScript != nil || atom.superScript != nil {
+                        self.makeScripts(atom, display: ouDisplay, index: UInt(overUnder.indexRange.location), delta: 0)
+                    }
+
+                case .overlap:
+                    if currentLine.length > 0 {
+                        self.addDisplayLine()
+                    }
+                    self.addInterElementSpace(prevNode, currentType: .ordinary)
+                    atom.type = .ordinary
+                    let overlapAtom = atom as! MTOverlap
+                    let overlapDisplay = self.makeOverlap(overlapAtom)
+                    overlapDisplay.position = currentPosition
+                    displayAtoms.append(overlapDisplay)
+                    // overlapDisplay.width is always 0, so currentPosition.x does not advance.
+                    currentPosition.x += overlapDisplay.width
+
+                case .extensibleArrow:
+                    if currentLine.length > 0 {
+                        self.addDisplayLine()
+                    }
+                    self.addInterElementSpace(prevNode, currentType: .relation)
+                    atom.type = .relation
+                    let arrowAtom = atom as! MTExtensibleArrow
+                    let arrowDisplay = self.makeExtensibleArrow(arrowAtom)
+                    arrowDisplay.position = currentPosition
+                    displayAtoms.append(arrowDisplay)
+                    currentPosition.x += arrowDisplay.width
+
                 case .ordinary, .binaryOperator, .relation, .open, .close, .placeholder, .punctuation:
                     // the rendering for all the rest is pretty similar
                     // All we need is render the character and set the interelement space.
@@ -1931,7 +1995,11 @@ class MTTypesetter {
         let numeratorStyle: MTLineStyle
         let denominatorStyle: MTLineStyle
 
-        if frac!.isContinuedFraction {
+        if let forced = frac!.forcedStyle {
+            // \genfrac with an explicit style forces both parts to that style.
+            numeratorStyle = forced
+            denominatorStyle = forced
+        } else if frac!.isContinuedFraction {
             // Continued fractions always use display style
             numeratorStyle = .display
             denominatorStyle = .display
@@ -1949,7 +2017,15 @@ class MTTypesetter {
         var numeratorShiftUp = self.numeratorShiftUp(frac!.hasRule)
         var denominatorShiftDown = self.denominatorShiftDown(frac!.hasRule)
         let barLocation = styleFont.mathTable!.axisHeight
-        let barThickness = frac!.hasRule ? styleFont.mathTable!.fractionRuleThickness : 0
+        // Use an explicit rule thickness (\genfrac) when provided, otherwise the font default.
+        let barThickness: CGFloat
+        if !frac!.hasRule {
+            barThickness = 0
+        } else if let explicit = frac!.ruleThickness {
+            barThickness = explicit
+        } else {
+            barThickness = styleFont.mathTable!.fractionRuleThickness
+        }
         
         if frac!.hasRule {
             // This is the difference between the lowest edge of the numerator and the top edge of the fraction bar
@@ -2449,7 +2525,98 @@ class MTTypesetter {
         overDisplay.width = innerListDisplay!.width;
         return overDisplay;
     }
-    
+
+    // MARK: - Over/Under annotations
+
+    func makeOverUnder(_ overUnder: MTOverUnder) -> MTDisplay {
+        // The base is laid out in the current style; the annotations one level smaller (script style).
+        let baseDisplay = MTTypesetter.createLineForMathList(overUnder.base, font: font, style: style, cramped: cramped)!
+        let scriptStyle = style.inc()
+
+        var upperDisplay: MTMathListDisplay? = nil
+        var lowerDisplay: MTMathListDisplay? = nil
+        if let over = overUnder.over {
+            upperDisplay = MTTypesetter.createLineForMathList(over, font: font, style: scriptStyle, cramped: cramped)
+        }
+        if let under = overUnder.under {
+            lowerDisplay = MTTypesetter.createLineForMathList(under, font: font, style: scriptStyle, cramped: true)
+        }
+
+        let opsDisplay = MTLargeOpLimitsDisplay(withNucleus: baseDisplay, upperLimit: upperDisplay, lowerLimit: lowerDisplay, limitShift: 0, extraPadding: 0)
+        if let upper = upperDisplay {
+            opsDisplay.upperLimitGap = max(styleFont.mathTable!.upperLimitGapMin, styleFont.mathTable!.upperLimitBaselineRiseMin - upper.descent)
+        }
+        if let lower = lowerDisplay {
+            opsDisplay.lowerLimitGap = max(styleFont.mathTable!.lowerLimitGapMin, styleFont.mathTable!.lowerLimitBaselineDropMin - lower.ascent)
+        }
+        opsDisplay.range = overUnder.indexRange
+        return opsDisplay
+    }
+
+    // MARK: - Cancel
+
+    func makeCancel(_ cancel: MTCancel) -> MTDisplay {
+        let innerDisplay = MTTypesetter.createLineForMathList(cancel.innerList, font: font, style: style, cramped: cramped)!
+        let cancelDisplay = MTCancelDisplay(withInner: innerDisplay, cancelType: cancel.cancelType, range: cancel.indexRange)
+        cancelDisplay.lineThickness = styleFont.mathTable!.fractionRuleThickness
+        cancelDisplay.ascent = innerDisplay.ascent
+        cancelDisplay.descent = innerDisplay.descent
+        cancelDisplay.width = innerDisplay.width
+        return cancelDisplay
+    }
+
+    // MARK: - Overlap boxes
+
+    func makeOverlap(_ overlap: MTOverlap) -> MTDisplay {
+        let innerDisplay = MTTypesetter.createLineForMathList(overlap.innerList, font: font, style: style, cramped: cramped)!
+        let overlapDisplay = MTOverlapDisplay(withInner: innerDisplay, overlapType: overlap.overlapType, range: overlap.indexRange)
+        overlapDisplay.ascent = innerDisplay.ascent
+        overlapDisplay.descent = innerDisplay.descent
+        // width is intentionally left at its overridden 0 value.
+        return overlapDisplay
+    }
+
+    // MARK: - Extensible arrows
+
+    func makeExtensibleArrow(_ arrow: MTExtensibleArrow) -> MTDisplay {
+        // Labels are rendered in script style, one level smaller than the arrow.
+        var upperDisplay: MTMathListDisplay? = nil
+        var lowerDisplay: MTMathListDisplay? = nil
+        if let over = arrow.overScript, !over.atoms.isEmpty {
+            upperDisplay = MTTypesetter.createLineForMathList(over, font: font, style: self.scriptStyle(), cramped: self.superScriptCramped())
+        }
+        if let under = arrow.underScript, !under.atoms.isEmpty {
+            lowerDisplay = MTTypesetter.createLineForMathList(under, font: font, style: self.scriptStyle(), cramped: self.subscriptCramped())
+        }
+
+        // Size the arrow to fit the wider label plus some padding on each side.
+        let arrowChar = arrow.arrowCharacter
+        let baseGlyph = self.findGlyphForCharacterAtIndex(arrowChar.startIndex, inString: arrowChar)
+        let scriptWidth = max(upperDisplay?.width ?? 0, lowerDisplay?.width ?? 0)
+        let padding = styleFont.mathTable!.muUnit * 6
+        let requiredWidth = scriptWidth + 2 * padding
+
+        var glyphAscent = CGFloat(0), glyphDescent = CGFloat(0), glyphWidth = CGFloat(0), glyphMinY = CGFloat(0)
+        let variantGlyph = self.findVariantGlyph(baseGlyph, withMaxWidth: requiredWidth, maxWidth: &glyphAscent, glyphDescent: &glyphDescent, glyphWidth: &glyphWidth, glyphMinY: &glyphMinY)
+
+        let arrowGlyphDisplay = MTGlyphDisplay(withGlpyh: variantGlyph, range: arrow.indexRange, font: styleFont)
+        arrowGlyphDisplay.ascent = glyphAscent
+        arrowGlyphDisplay.descent = glyphDescent
+        arrowGlyphDisplay.width = glyphWidth
+        // Center the arrow vertically on the math axis.
+        arrowGlyphDisplay.shiftDown = 0.5 * (glyphAscent - glyphDescent) - styleFont.mathTable!.axisHeight
+
+        let opsDisplay = MTLargeOpLimitsDisplay(withNucleus: arrowGlyphDisplay, upperLimit: upperDisplay, lowerLimit: lowerDisplay, limitShift: 0, extraPadding: 0)
+        if let upper = upperDisplay {
+            opsDisplay.upperLimitGap = max(styleFont.mathTable!.upperLimitGapMin, styleFont.mathTable!.upperLimitBaselineRiseMin - upper.descent)
+        }
+        if let lower = lowerDisplay {
+            opsDisplay.lowerLimitGap = max(styleFont.mathTable!.lowerLimitGapMin, styleFont.mathTable!.lowerLimitBaselineDropMin - lower.ascent)
+        }
+        opsDisplay.range = arrow.indexRange
+        return opsDisplay
+    }
+
     // MARK: - Accents
     
     func isSingleCharAccentee(_ accent:MTAccent?) -> Bool {

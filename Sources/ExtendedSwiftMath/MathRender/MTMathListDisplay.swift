@@ -780,6 +780,134 @@ class MTLineDisplay : MTDisplay {
     
 }
 
+// MARK: - MTCancelDisplay
+
+/// Rendering of a cancelled (struck-through) inner list.
+class MTCancelDisplay : MTDisplay {
+
+    /** A display representing the inner list that is cancelled. Its position is relative
+     to the parent and is not treated as a sub-display.
+     */
+    var inner: MTMathListDisplay?
+    var cancelType: MTCancel.CancelType = .forward
+    var lineThickness: CGFloat = 0
+
+    init(withInner inner: MTMathListDisplay?, cancelType: MTCancel.CancelType, range: NSRange) {
+        super.init()
+        self.inner = inner
+        self.cancelType = cancelType
+        self.range = range
+    }
+
+    override var textColor: MTColor? {
+        set {
+            super.textColor = newValue
+            inner?.textColor = newValue
+        }
+        get { super.textColor }
+    }
+
+    override var position: CGPoint {
+        set {
+            super.position = newValue
+            self.inner?.position = CGPointMake(newValue.x, newValue.y)
+        }
+        get { super.position }
+    }
+
+    override func draw(_ context: CGContext) {
+        super.draw(context)
+        self.inner?.draw(context)
+
+        context.saveGState()
+        self.textColor?.setStroke()
+
+        let path = MTBezierPath()
+        path.lineWidth = self.lineThickness
+
+        let minX = self.position.x
+        let maxX = self.position.x + self.width
+        let minY = self.position.y - self.descent
+        let maxY = self.position.y + self.ascent
+
+        switch self.cancelType {
+        case .forward:
+            // bottom-left to top-right
+            path.move(to: CGPointMake(minX, minY))
+            path.addLine(to: CGPointMake(maxX, maxY))
+        case .backward:
+            // top-left to bottom-right
+            path.move(to: CGPointMake(minX, maxY))
+            path.addLine(to: CGPointMake(maxX, minY))
+        case .cross:
+            path.move(to: CGPointMake(minX, minY))
+            path.addLine(to: CGPointMake(maxX, maxY))
+            path.move(to: CGPointMake(minX, maxY))
+            path.addLine(to: CGPointMake(maxX, minY))
+        }
+        path.stroke()
+
+        context.restoreGState()
+    }
+}
+
+// MARK: - MTOverlapDisplay
+
+/// Rendering of a zero-width overlap box (\mathllap, \mathrlap, \mathclap).
+/// The display always reports a width of 0; the inner content is drawn offset
+/// according to the overlap type so it overlaps the surrounding material.
+class MTOverlapDisplay : MTDisplay {
+
+    /** A display representing the inner list rendered with zero advance width. */
+    var inner: MTMathListDisplay?
+    var overlapType: MTOverlap.OverlapType = .right
+    /// The real (non-zero) width of the inner content, used to compute the draw offset.
+    var actualWidth: CGFloat = 0
+
+    init(withInner inner: MTMathListDisplay?, overlapType: MTOverlap.OverlapType, range: NSRange) {
+        super.init()
+        self.inner = inner
+        self.overlapType = overlapType
+        self.actualWidth = inner?.width ?? 0
+        self.range = range
+    }
+
+    /// Always zero so the overlap box contributes no advance width to its line.
+    override var width: CGFloat {
+        get { 0 }
+        set { /* ignored: overlap boxes are always zero-width */ }
+    }
+
+    override var textColor: MTColor? {
+        set {
+            super.textColor = newValue
+            inner?.textColor = newValue
+        }
+        get { super.textColor }
+    }
+
+    private func xOffset() -> CGFloat {
+        switch overlapType {
+        case .right:  return 0
+        case .left:   return -actualWidth
+        case .center: return -actualWidth / 2
+        }
+    }
+
+    override var position: CGPoint {
+        set {
+            super.position = newValue
+            self.inner?.position = CGPointMake(newValue.x + xOffset(), newValue.y)
+        }
+        get { super.position }
+    }
+
+    override func draw(_ context: CGContext) {
+        super.draw(context)
+        self.inner?.draw(context)
+    }
+}
+
 // MARK: - MTAccentDisplay
 
 /// Rendering an accent as a display
