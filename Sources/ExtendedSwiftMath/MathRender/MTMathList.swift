@@ -48,7 +48,16 @@ public enum MTMathAtomType: Int, CustomStringConvertible, Comparable {
     case overline
     /// An accented atom - Accent in TeX
     case accent
-    
+    /// An atom with an annotation set above and/or below it, e.g. \overset, \underset, \stackrel.
+    case overUnder
+    /// An atom whose content is struck through, e.g. \cancel, \bcancel, \xcancel.
+    case cancel
+    /// A zero-width overlap box, e.g. \mathllap, \mathrlap, \mathclap.
+    case overlap
+    /// A horizontally extensible arrow with optional over/under labels,
+    /// e.g. \xrightarrow, \xleftarrow.
+    case extensibleArrow
+
     // Atoms after this point do not support subscripts or superscripts
     
     /// A left atom - Left & Right in TeX. We don't need two since we track boundaries separately.
@@ -103,6 +112,10 @@ public enum MTMathAtomType: Int, CustomStringConvertible, Comparable {
             case .underline:      return "Underline"
             case .overline:       return "Overline"
             case .accent:         return "Accent"
+            case .overUnder:      return "OverUnder"
+            case .cancel:         return "Cancel"
+            case .overlap:        return "Overlap"
+            case .extensibleArrow: return "ExtensibleArrow"
             case .boundary:       return "Boundary"
             case .space:          return "Space"
             case .style:          return "Style"
@@ -233,6 +246,14 @@ public class MTMathAtom: NSObject {
                 return MTOverLine(self as? MTOverLine)
             case .accent:
                 return MTAccent(self as? MTAccent)
+            case .overUnder:
+                return MTOverUnder(self as? MTOverUnder)
+            case .cancel:
+                return MTCancel(self as? MTCancel)
+            case .overlap:
+                return MTOverlap(self as? MTOverlap)
+            case .extensibleArrow:
+                return MTExtensibleArrow(self as? MTExtensibleArrow)
             case .space:
                 return MTMathSpace(self as? MTMathSpace)
             case .color:
@@ -332,7 +353,15 @@ public class MTFraction: MTMathAtom {
     // Continued fraction properties
     public var isContinuedFraction: Bool = false
     public var alignment: String = "c"  // "l", "r", "c" for left, right, center
-    
+
+    // Generalized fraction (\genfrac) properties
+    /// Explicit rule thickness in points. When nil the font default is used.
+    /// A value of 0 (with hasRule == false) renders with no bar.
+    public var ruleThickness: CGFloat?
+    /// Forced rendering style for the numerator/denominator. When nil the style
+    /// is inherited from the surrounding context.
+    public var forcedStyle: MTLineStyle?
+
     init(_ frac: MTFraction?) {
         super.init(frac)
         self.type = .fraction
@@ -344,6 +373,8 @@ public class MTFraction: MTMathAtom {
             self.rightDelimiter = frac.rightDelimiter
             self.isContinuedFraction = frac.isContinuedFraction
             self.alignment = frac.alignment
+            self.ruleThickness = frac.ruleThickness
+            self.forcedStyle = frac.forcedStyle
         }
     }
     
@@ -604,6 +635,180 @@ public class MTAccent: MTMathAtom {
         super.init()
         self.type = .accent
         self.nucleus = value
+    }
+}
+
+// MARK: - MTOverUnder
+
+/** An atom that places an annotation centered above and/or below a base expression.
+ This backs the `\overset`, `\underset` and `\stackrel` commands. The annotations are
+ rendered one style smaller than the base (script style). */
+public class MTOverUnder: MTMathAtom {
+    /// The base expression being annotated.
+    public var base: MTMathList?
+    /// The annotation placed above the base (nil if none).
+    public var over: MTMathList?
+    /// The annotation placed below the base (nil if none).
+    public var under: MTMathList?
+    /// When true the resulting atom is treated as a relation for inter-element spacing
+    /// (used by `\stackrel`). Otherwise it is treated as ordinary.
+    public var isStackrel: Bool = false
+
+    init(_ overUnder: MTOverUnder?) {
+        super.init(overUnder)
+        self.type = .overUnder
+        self.base = MTMathList(overUnder?.base)
+        self.over = MTMathList(overUnder?.over)
+        self.under = MTMathList(overUnder?.under)
+        self.isStackrel = overUnder?.isStackrel ?? false
+    }
+
+    override init() {
+        super.init()
+        self.type = .overUnder
+    }
+
+    override public var finalized: MTMathAtom {
+        let newOverUnder = super.finalized as! MTOverUnder
+        newOverUnder.base = newOverUnder.base?.finalized
+        newOverUnder.over = newOverUnder.over?.finalized
+        newOverUnder.under = newOverUnder.under?.finalized
+        newOverUnder.isStackrel = self.isStackrel
+        return newOverUnder
+    }
+}
+
+// MARK: - MTCancel
+
+/** An atom whose inner content is struck through with one or two diagonal lines.
+ This backs the `\cancel` (forward diagonal), `\bcancel` (backward diagonal) and
+ `\xcancel` (cross) commands. */
+public class MTCancel: MTMathAtom {
+    /// The direction(s) of the cancellation strike.
+    public enum CancelType: Int {
+        /// Bottom-left to top-right (\cancel).
+        case forward
+        /// Top-left to bottom-right (\bcancel).
+        case backward
+        /// Both diagonals forming an X (\xcancel).
+        case cross
+    }
+
+    /// The content being cancelled.
+    public var innerList: MTMathList?
+    /// Which diagonal(s) to draw.
+    public var cancelType: CancelType = .forward
+
+    init(_ cancel: MTCancel?) {
+        super.init(cancel)
+        self.type = .cancel
+        self.innerList = MTMathList(cancel?.innerList)
+        self.cancelType = cancel?.cancelType ?? .forward
+    }
+
+    override init() {
+        super.init()
+        self.type = .cancel
+    }
+
+    override public var finalized: MTMathAtom {
+        let newCancel = super.finalized as! MTCancel
+        newCancel.innerList = newCancel.innerList?.finalized
+        newCancel.cancelType = self.cancelType
+        return newCancel
+    }
+}
+
+// MARK: - MTOverlap
+
+/** An atom that renders its inner content with zero advance width, overlapping the
+ surrounding material. This backs the `\mathllap` (overlap left), `\mathrlap`
+ (overlap right) and `\mathclap` (overlap centered) commands. */
+public class MTOverlap: MTMathAtom {
+    /// How the zero-width content is positioned relative to the insertion point.
+    public enum OverlapType: Int {
+        /// Content extends to the left of the insertion point (\mathllap).
+        case left
+        /// Content extends to the right of the insertion point (\mathrlap).
+        case right
+        /// Content is centered on the insertion point (\mathclap).
+        case center
+    }
+
+    /// The content rendered with zero advance width.
+    public var innerList: MTMathList?
+    /// The overlap direction.
+    public var overlapType: OverlapType = .right
+
+    init(_ overlap: MTOverlap?) {
+        super.init(overlap)
+        self.type = .overlap
+        self.innerList = MTMathList(overlap?.innerList)
+        self.overlapType = overlap?.overlapType ?? .right
+    }
+
+    override init() {
+        super.init()
+        self.type = .overlap
+    }
+
+    override public var finalized: MTMathAtom {
+        let newOverlap = super.finalized as! MTOverlap
+        newOverlap.innerList = newOverlap.innerList?.finalized
+        newOverlap.overlapType = self.overlapType
+        return newOverlap
+    }
+}
+
+// MARK: - MTExtensibleArrow
+
+/** A horizontally extensible arrow with optional labels above and below it.
+ This backs the `\xrightarrow[under]{over}`, `\xleftarrow[under]{over}` and
+ `\xleftrightarrow[under]{over}` commands. The arrow is sized to fit the wider
+ of the two labels, which are rendered in script style. */
+public class MTExtensibleArrow: MTMathAtom {
+    /// The arrow direction.
+    public enum ArrowDirection: Int {
+        case right
+        case left
+        case leftRight
+    }
+
+    /// The label placed above the arrow (nil if none).
+    public var overScript: MTMathList?
+    /// The label placed below the arrow (the optional `[...]` argument; nil if none).
+    public var underScript: MTMathList?
+    /// The arrow direction.
+    public var direction: ArrowDirection = .right
+
+    /// The Unicode arrow character for this direction.
+    public var arrowCharacter: String {
+        switch direction {
+        case .right:     return "\u{2192}" // →
+        case .left:      return "\u{2190}" // ←
+        case .leftRight: return "\u{2194}" // ↔
+        }
+    }
+
+    init(_ arrow: MTExtensibleArrow?) {
+        super.init(arrow)
+        self.type = .extensibleArrow
+        self.overScript = MTMathList(arrow?.overScript)
+        self.underScript = MTMathList(arrow?.underScript)
+        self.direction = arrow?.direction ?? .right
+    }
+
+    override init() {
+        super.init()
+        self.type = .extensibleArrow
+    }
+
+    override public var finalized: MTMathAtom {
+        let newArrow = super.finalized as! MTExtensibleArrow
+        newArrow.overScript = newArrow.overScript?.finalized
+        newArrow.underScript = newArrow.underScript?.finalized
+        newArrow.direction = self.direction
+        return newArrow
     }
 }
 

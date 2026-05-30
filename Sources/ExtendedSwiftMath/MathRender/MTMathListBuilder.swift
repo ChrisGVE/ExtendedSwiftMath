@@ -589,7 +589,18 @@ public struct MTMathListBuilder {
                 }
                 if atom.type == .fraction {
                     if let frac = atom as? MTFraction {
-                        if frac.isContinuedFraction {
+                        if frac.forcedStyle != nil || frac.ruleThickness != nil {
+                            // Serialize as \genfrac to preserve explicit thickness/style.
+                            let thickness: String
+                            if let t = frac.ruleThickness {
+                                let num = (t == t.rounded()) ? String(format: "%.0f", t) : "\(t)"
+                                thickness = "\(num)pt"
+                            } else {
+                                thickness = ""
+                            }
+                            let styleStr = frac.forcedStyle.map { "\($0.rawValue)" } ?? ""
+                            str += "\\genfrac{\(frac.leftDelimiter)}{\(frac.rightDelimiter)}{\(thickness)}{\(styleStr)}{\(mathListToString(frac.numerator))}{\(mathListToString(frac.denominator))}"
+                        } else if frac.isContinuedFraction {
                             // Generate \cfrac with optional alignment
                             if frac.alignment != "c" {
                                 str += "\\cfrac[\(frac.alignment)]{\(mathListToString(frac.numerator!))}{\(mathListToString(frac.denominator!))}"
@@ -690,6 +701,16 @@ public struct MTMathListBuilder {
                 } else if atom.type == .accent {
                     if let accent = atom as? MTAccent {
                         str += "\\\(MTMathAtomFactory.accentName(accent)!){\(mathListToString(accent.innerList!))}"
+                    }
+                } else if atom.type == .overUnder {
+                    if let overUnder = atom as? MTOverUnder {
+                        if overUnder.isStackrel {
+                            str += "\\stackrel{\(mathListToString(overUnder.over))}{\(mathListToString(overUnder.base))}"
+                        } else if overUnder.over != nil {
+                            str += "\\overset{\(mathListToString(overUnder.over))}{\(mathListToString(overUnder.base))}"
+                        } else {
+                            str += "\\underset{\(mathListToString(overUnder.under))}{\(mathListToString(overUnder.base))}"
+                        }
                     }
                 } else if atom.type == .largeOperator {
                     let op = atom as! MTLargeOperator
@@ -940,6 +961,99 @@ public struct MTMathListBuilder {
             let under = MTUnderLine()
             under.innerList = self.buildInternal(true)
             return under
+        } else if command == "xrightarrow" || command == "xleftarrow" || command == "xleftrightarrow" {
+            // \xrightarrow[under]{over} etc. The [under] argument is optional.
+            let arrow = MTExtensibleArrow()
+            switch command {
+            case "xleftarrow":      arrow.direction = .left
+            case "xleftrightarrow": arrow.direction = .leftRight
+            default:                arrow.direction = .right
+            }
+            self.skipSpaces()
+            if self.hasCharacters && self.string[self.currentCharIndex] == "[" {
+                _ = self.getNextCharacter() // consume '['
+                arrow.underScript = self.buildInternal(false, stopChar: "]")
+            }
+            arrow.overScript = self.buildInternal(true)
+            return arrow
+        } else if command == "genfrac" {
+            // \genfrac{left}{right}{thickness}{style}{num}{den}
+            let frac = MTFraction()
+
+            let leftDelim = self.readBracedText()
+            let rightDelim = self.readBracedText()
+            let thicknessStr = self.readBracedText()
+            let styleStr = self.readBracedText()
+
+            frac.leftDelimiter = leftDelim ?? ""
+            frac.rightDelimiter = rightDelim ?? ""
+
+            // Thickness: empty -> font default (with rule); explicit -> use value,
+            // hasRule true only when thickness > 0.
+            if let t = thicknessStr, !t.isEmpty {
+                if let parsed = self.parseLength(t) {
+                    frac.ruleThickness = parsed
+                    frac.hasRule = parsed > 0
+                } else {
+                    self.setError(.invalidCommand, message: "Invalid thickness for \\genfrac: \(t)")
+                    return nil
+                }
+            } else {
+                frac.ruleThickness = nil
+                frac.hasRule = true
+            }
+
+            // Style: 0=display, 1=text, 2=script, 3=scriptscript. Empty -> inherit.
+            if let s = styleStr, !s.isEmpty {
+                if let styleNum = Int(s.trimmingCharacters(in: .whitespaces)), let forced = MTLineStyle(rawValue: styleNum) {
+                    frac.forcedStyle = forced
+                } else {
+                    self.setError(.invalidCommand, message: "Invalid style for \\genfrac: \(s)")
+                    return nil
+                }
+            }
+
+            frac.numerator = self.buildInternal(true)
+            frac.denominator = self.buildInternal(true)
+            return frac
+        } else if command == "mathllap" {
+            // \mathllap{x} renders x with zero width, overlapping to the left.
+            let overlap = MTOverlap()
+            overlap.overlapType = .left
+            overlap.innerList = self.buildInternal(true)
+            return overlap
+        } else if command == "mathrlap" {
+            // \mathrlap{x} renders x with zero width, overlapping to the right.
+            let overlap = MTOverlap()
+            overlap.overlapType = .right
+            overlap.innerList = self.buildInternal(true)
+            return overlap
+        } else if command == "mathclap" {
+            // \mathclap{x} renders x with zero width, centered on the insertion point.
+            let overlap = MTOverlap()
+            overlap.overlapType = .center
+            overlap.innerList = self.buildInternal(true)
+            return overlap
+        } else if command == "overset" {
+            // \overset{annotation}{base} places the annotation above the base.
+            let overUnder = MTOverUnder()
+            overUnder.over = self.buildInternal(true)
+            overUnder.base = self.buildInternal(true)
+            return overUnder
+        } else if command == "underset" {
+            // \underset{annotation}{base} places the annotation below the base.
+            let overUnder = MTOverUnder()
+            overUnder.under = self.buildInternal(true)
+            overUnder.base = self.buildInternal(true)
+            return overUnder
+        } else if command == "stackrel" {
+            // \stackrel{annotation}{relation} places the annotation above the relation,
+            // and the result is spaced as a relation.
+            let overUnder = MTOverUnder()
+            overUnder.over = self.buildInternal(true)
+            overUnder.base = self.buildInternal(true)
+            overUnder.isStackrel = true
+            return overUnder
         } else if command == "substack" {
             // \substack reads ONE braced argument containing rows separated by \\
             // Similar to how \frac reads {numerator}{denominator}
@@ -1087,6 +1201,40 @@ public struct MTMathListBuilder {
             self.setError(.invalidCommand, message:errorMessage)
             return nil;
         }
+    }
+
+    /// Reads a single `{...}` group as raw text, handling nested braces. Returns the
+    /// content (which may be empty for `{}`), or nil if no opening brace is found.
+    mutating func readBracedText() -> String? {
+        if !self.expectCharacter("{") {
+            self.setError(.characterNotFound, message: "Missing {")
+            return nil
+        }
+        var result = ""
+        var depth = 1
+        while self.hasCharacters {
+            let ch = self.getNextCharacter()
+            if ch == "{" {
+                depth += 1
+            } else if ch == "}" {
+                depth -= 1
+                if depth == 0 { return result }
+            }
+            result.append(ch)
+        }
+        self.setError(.mismatchBraces, message: "Missing }")
+        return nil
+    }
+
+    /// Parses a TeX length such as "2pt", "0pt", "1.5pt" or a bare number into points.
+    /// Only the `pt` unit (and unitless values) are supported, which suffices for \genfrac.
+    func parseLength(_ string: String) -> CGFloat? {
+        var s = string.trimmingCharacters(in: .whitespaces)
+        if s.hasSuffix("pt") {
+            s = String(s.dropLast(2)).trimmingCharacters(in: .whitespaces)
+        }
+        guard let value = Double(s) else { return nil }
+        return CGFloat(value)
     }
 
     mutating func readColor() -> String? {
