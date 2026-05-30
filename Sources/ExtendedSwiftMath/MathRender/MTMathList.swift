@@ -481,6 +481,12 @@ public class MTInner: MTMathAtom {
     /// delimiter sizing based on inner content. Used by \big, \Big, \bigg, \Bigg commands.
     public var delimiterHeight: CGFloat?
 
+    /// Middle delimiters produced by `\middle`. Each entry records the index into
+    /// `innerList.atoms` at which the delimiter appears, together with the boundary atom
+    /// to render. The delimiter is stretched to the same height as the surrounding
+    /// `\left`/`\right` delimiters by the typesetter.
+    public var middleDelimiters: [(index: Int, delimiter: MTMathAtom)] = []
+
     init(_ inner:MTInner?) {
         super.init(inner)
         self.type = .inner
@@ -488,6 +494,7 @@ public class MTInner: MTMathAtom {
         self.leftBoundary = MTMathAtom(inner?.leftBoundary)
         self.rightBoundary = MTMathAtom(inner?.rightBoundary)
         self.delimiterHeight = inner?.delimiterHeight
+        self.middleDelimiters = (inner?.middleDelimiters ?? []).map { ($0.index, MTMathAtom($0.delimiter)) }
     }
     
     override init() {

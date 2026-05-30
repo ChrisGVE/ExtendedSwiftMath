@@ -2354,10 +2354,41 @@ class MTTypesetter {
         // Only include inner content if not using explicit delimiter height
         // (explicit height commands like \big produce standalone delimiters)
         if inner!.delimiterHeight == nil {
-            let innerListDisplay = MTTypesetter.createLineForMathList(inner!.innerList, font:font, style:style, cramped:cramped, spaced:true, maxWidth:maxWidth)
-            innerListDisplay!.position = position;
-            position.x += innerListDisplay!.width;
-            innerElements.append(innerListDisplay!)
+            let middles = inner!.middleDelimiters.sorted { $0.index < $1.index }
+            if middles.isEmpty {
+                let innerListDisplay = MTTypesetter.createLineForMathList(inner!.innerList, font:font, style:style, cramped:cramped, spaced:true, maxWidth:maxWidth)
+                innerListDisplay!.position = position;
+                position.x += innerListDisplay!.width;
+                innerElements.append(innerListDisplay!)
+            } else {
+                // Split the inner content at each \middle delimiter, typeset each segment,
+                // and interleave the middle delimiters stretched to the full glyph height.
+                let allAtoms = inner!.innerList?.atoms ?? []
+                var segStart = 0
+                func appendSegment(_ from: Int, _ to: Int) {
+                    let seg = MTMathList()
+                    if from < to {
+                        for atom in allAtoms[from..<to] { seg.add(atom.finalized) }
+                    }
+                    if let segDisplay = MTTypesetter.createLineForMathList(seg, font:font, style:style, cramped:cramped, spaced:true, maxWidth:maxWidth) {
+                        segDisplay.position = position
+                        position.x += segDisplay.width
+                        innerElements.append(segDisplay)
+                    }
+                }
+                for middle in middles {
+                    let clamped = max(segStart, min(middle.index, allAtoms.count))
+                    appendSegment(segStart, clamped)
+                    if !middle.delimiter.nucleus.isEmpty,
+                       let midGlyph = self.findGlyphForBoundary(middle.delimiter.nucleus, withHeight: glyphHeight) {
+                        midGlyph.position = position
+                        position.x += midGlyph.width
+                        innerElements.append(midGlyph)
+                    }
+                    segStart = clamped
+                }
+                appendSegment(segStart, allAtoms.count)
+            }
         }
 
         if inner!.rightBoundary != nil && !inner!.rightBoundary!.nucleus.isEmpty {

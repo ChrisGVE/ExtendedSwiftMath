@@ -2496,13 +2496,22 @@ final class MTMathListBuilderTests: XCTestCase {
             var error: NSError? = nil
             let list = MTMathListBuilder.build(fromString: latex, error: &error)
 
-            if list == nil || error != nil {
-                throw XCTSkip("\\middle not implemented: \(desc). Error: \(error?.localizedDescription ?? "nil result")")
-            }
-
             let unwrappedList = try XCTUnwrap(list, "Should parse: \(desc)")
-            XCTAssertTrue(unwrappedList.atoms.count >= 1, "\(desc) should have atoms")
+            XCTAssertNil(error, "Should not error on \(desc): \(error?.localizedDescription ?? "")")
+
+            // The expression should contain an inner atom carrying a middle delimiter.
+            let inner = try XCTUnwrap(unwrappedList.atoms.first { $0 is MTInner } as? MTInner,
+                                      "\(desc) should produce an inner (\\left...\\right) atom")
+            XCTAssertEqual(inner.middleDelimiters.count, 1, "\(desc) should record exactly one \\middle delimiter")
+            XCTAssertFalse(inner.middleDelimiters.first?.delimiter.nucleus.isEmpty ?? true,
+                           "\(desc) middle delimiter should have a glyph")
         }
+
+        // \middle outside \left...\right must error.
+        var badError: NSError? = nil
+        let bad = MTMathListBuilder.build(fromString: "a \\middle| b", error: &badError)
+        XCTAssertNil(bad, "\\middle without \\left should fail to parse")
+        XCTAssertNotNil(badError, "\\middle without \\left should set an error")
     }
 
     func testSubstack() throws {
