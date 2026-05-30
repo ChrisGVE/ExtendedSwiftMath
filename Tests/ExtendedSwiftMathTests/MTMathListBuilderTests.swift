@@ -2571,7 +2571,8 @@ final class MTMathListBuilderTests: XCTestCase {
     }
 
     func testSpacingCommands() throws {
-        // Test fine-tuned spacing commands
+        // Test fine-tuned spacing commands. All of \, \: \; \! \quad \qquad are
+        // supported; \: is a LaTeX alias for the medium space \>.
         let testCases = [
             ("a\\,b", "thin space \\,"),
             ("a\\:b", "medium space \\:"),
@@ -2585,13 +2586,21 @@ final class MTMathListBuilderTests: XCTestCase {
             var error: NSError? = nil
             let list = MTMathListBuilder.build(fromString: latex, error: &error)
 
-            if list == nil || error != nil {
-                throw XCTSkip("Spacing commands (\\,, \\:, \\;, \\!) not implemented: \(desc). Error: \(error?.localizedDescription ?? "nil result")")
-            }
-
             let unwrappedList = try XCTUnwrap(list, "Should parse: \(desc)")
-            XCTAssertTrue(unwrappedList.atoms.count >= 1, "\(desc) should have atoms")
+            XCTAssertNil(error, "Should not error on \(desc): \(error?.localizedDescription ?? "")")
+
+            let hasSpace = unwrappedList.atoms.contains { $0 is MTMathSpace }
+            XCTAssertTrue(hasSpace, "\(desc) should produce at least one spacing atom")
         }
+
+        // \: must map to the same width as the medium space \> (4mu).
+        var colonErr: NSError? = nil
+        let colon = try XCTUnwrap(MTMathListBuilder.build(fromString: "\\:", error: &colonErr))
+        var gtErr: NSError? = nil
+        let gt = try XCTUnwrap(MTMathListBuilder.build(fromString: "\\>", error: &gtErr))
+        let colonSpace = try XCTUnwrap(colon.atoms.first as? MTMathSpace, "\\: should be a spacing atom")
+        let gtSpace = try XCTUnwrap(gt.atoms.first as? MTMathSpace, "\\> should be a spacing atom")
+        XCTAssertEqual(colonSpace.space, gtSpace.space, "\\: must equal \\> (medium space)")
     }
 
     // MARK: - Medium Priority Missing Features Tests

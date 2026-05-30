@@ -541,6 +541,7 @@ public class MTMathAtomFactory {
         // Spacing
         "," : MTMathSpace(space: 3),
         ">" : MTMathSpace(space: 4),
+        ":" : MTMathSpace(space: 4),  // \: is a LaTeX alias for the medium space \>
         ";" : MTMathSpace(space: 5),
         "!" : MTMathSpace(space: -3),
         "quad" : MTMathSpace(space: 18),  // quad = 1em = 18mu
