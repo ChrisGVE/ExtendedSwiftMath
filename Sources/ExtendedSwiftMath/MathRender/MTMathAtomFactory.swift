@@ -24,7 +24,8 @@ public class MTMathAtomFactory {
         "gets" : "leftarrow",
         "to" : "rightarrow",
         "iff" : "Longleftrightarrow",
-        "AA" : "angstrom"
+        "AA" : "angstrom",
+        "bmod" : "mod"
     ]
     
     public static let delimiters = [
