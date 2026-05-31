@@ -2475,11 +2475,8 @@ final class MTMathListBuilderTests: XCTestCase {
             var error: NSError? = nil
             let list = MTMathListBuilder.build(fromString: latex, error: &error)
 
-            if list == nil || error != nil {
-                throw XCTSkip("\\displaystyle/\\textstyle not implemented: \(desc). Error: \(error?.localizedDescription ?? "nil result")")
-            }
-
             let unwrappedList = try XCTUnwrap(list, "Should parse: \(desc)")
+            XCTAssertNil(error, "Should not error on \(desc): \(error?.localizedDescription ?? "")")
             XCTAssertTrue(unwrappedList.atoms.count >= 1, "\(desc) should have atoms")
         }
     }
@@ -2581,11 +2578,8 @@ final class MTMathListBuilderTests: XCTestCase {
             var error: NSError? = nil
             let list = MTMathListBuilder.build(fromString: latex, error: &error)
 
-            if list == nil || error != nil {
-                throw XCTSkip("Manual delimiter sizing (\\big, \\Big, \\bigg, \\Bigg) not implemented: \(desc). Error: \(error?.localizedDescription ?? "nil result")")
-            }
-
             let unwrappedList = try XCTUnwrap(list, "Should parse: \(desc)")
+            XCTAssertNil(error, "Should not error on \(desc): \(error?.localizedDescription ?? "")")
             XCTAssertTrue(unwrappedList.atoms.count >= 1, "\(desc) should have atoms")
         }
     }
@@ -2672,13 +2666,9 @@ final class MTMathListBuilderTests: XCTestCase {
             var error: NSError? = nil
             let list = MTMathListBuilder.build(fromString: latex, error: &error)
 
-            // cfrac might be implemented, let's check
-            if list != nil && error == nil {
-                let unwrappedList = try XCTUnwrap(list, "Should parse: \(desc)")
-                XCTAssertTrue(unwrappedList.atoms.count >= 1, "\(desc) should have atoms")
-            } else {
-                throw XCTSkip("\\cfrac may have issues: \(desc). Error: \(error?.localizedDescription ?? "nil result")")
-            }
+            let unwrappedList = try XCTUnwrap(list, "Should parse: \(desc)")
+            XCTAssertNil(error, "Should not error on \(desc): \(error?.localizedDescription ?? "")")
+            XCTAssertTrue(unwrappedList.atoms.count >= 1, "\(desc) should have atoms")
         }
     }
 
