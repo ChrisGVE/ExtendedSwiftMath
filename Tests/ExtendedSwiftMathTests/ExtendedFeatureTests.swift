@@ -256,6 +256,29 @@ final class ExtendedFeatureTests: XCTestCase {
         XCTAssertNil(list)
     }
 
+    func testGenfracNamedDelimiters() {
+        // Named delimiters such as \langle must be normalized to the canonical
+        // delimiter character (⟨), not stored as raw multi-character text.
+        let list = build("\\genfrac{\\langle}{\\rangle}{0pt}{}{n}{k}")
+        let frac = list.atoms[0] as! MTFraction
+        XCTAssertEqual(frac.leftDelimiter, "\u{27E8}")   // ⟨
+        XCTAssertEqual(frac.rightDelimiter, "\u{27E9}")  // ⟩
+        // Renders without error and re-parses to the same canonical delimiters.
+        XCTAssertGreaterThan(render("\\genfrac{\\langle}{\\rangle}{0pt}{}{n}{k}").width, 0)
+        let reparsed = build(MTMathListBuilder.mathListToString(list))
+        let frac2 = reparsed.atoms[0] as! MTFraction
+        XCTAssertEqual(frac2.leftDelimiter, "\u{27E8}")
+        XCTAssertEqual(frac2.rightDelimiter, "\u{27E9}")
+    }
+
+    func testGenfracInvalidDelimiterError() {
+        var error: NSError? = nil
+        // A multi-character non-delimiter token is rejected rather than stored raw.
+        let list = MTMathListBuilder.build(fromString: "\\genfrac{xyz}{)}{0pt}{}{n}{k}", error: &error)
+        XCTAssertNotNil(error)
+        XCTAssertNil(list)
+    }
+
     func testGenfracRendering() {
         for latex in ["\\genfrac{(}{)}{0pt}{}{n}{k}",
                       "\\genfrac{[}{]}{2pt}{1}{x}{y}",
