@@ -1,14 +1,4 @@
 ExtendedSwiftMath
 Copyright 2026 Christian C. Berclaz
 
-This product is licensed under the Apache License, Version 2.0 (see LICENSE).
-
-ExtendedSwiftMath is an independently rewritten, standalone library. It was
-originally inspired by SwiftMath (https://github.com/mgriebling/SwiftMath) by
-Mike Griebling, itself a Swift translation of iosMath
-(https://github.com/kostub/iosMath) by Kostub Deshmukh. That earlier work
-sparked this project; this acknowledgment is provided as a courtesy.
-
-Bundled fonts are distributed under their own licenses, as documented in the
-project README and the accompanying font license files (GUST-FONT-LICENSE.txt,
-OFL.txt).
+Licensed under the Apache License, Version 2.0

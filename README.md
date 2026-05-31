@@ -699,8 +699,6 @@ For a complete list of features and their implementation status, see [MISSING_FE
 `ExtendedSwiftMath` is available under the Apache License 2.0. See the [LICENSE](./LICENSE)
 and [NOTICE](./NOTICE) files for more info.
 
-The original `SwiftMath` is available under the MIT license.
-
 ### Fonts
 This distribution contains the following fonts. These fonts are
 licensed as follows:
