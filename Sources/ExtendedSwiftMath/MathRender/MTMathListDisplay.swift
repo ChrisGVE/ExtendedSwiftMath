@@ -141,7 +141,13 @@ public class MTCTLineDisplay : MTDisplay {
             let bounds = CTLineGetBoundsWithOptions(line, .useGlyphPathBounds)
             self.ascent = max(0, CGRectGetMaxY(bounds) - 0);
             self.descent = max(0, 0 - CGRectGetMinY(bounds));
-            // TODO: Should we use this width vs the typographic width? They are slightly different. Don't know why.
+            // Width intentionally stays the typographic width (set above from
+            // CTLineGetTypographicBounds). That is the line's advance width (sum of
+            // glyph advances incl. side bearings), which is what the pen must move
+            // to position following elements. The glyph-path bounds maxX below is
+            // the *inked* extent (tighter, excludes trailing advance) and would
+            // mis-position subsequent atoms, so it is not used for width — only for
+            // ascent/descent, where the inked extent is what we want.
             // _width = CGRectGetMaxX(bounds);
         } else {
             // Our own implementation of the ios6 function to get glyph path bounds.

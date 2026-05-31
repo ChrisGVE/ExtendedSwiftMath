@@ -1,17 +1,19 @@
-# ExtendedSwiftMath Missing Features - Implementation Status
+# ExtendedSwiftMath Feature Implementation Status
 
-This document lists LaTeX features that are **not yet implemented** in ExtendedSwiftMath, based on comprehensive testing against the LaTeX Mathematics reference.
+This document tracks the LaTeX features evaluated for ExtendedSwiftMath against
+the LaTeX Mathematics reference. Every feature tracked here is now implemented;
+the file is retained as a record of coverage and implementation notes.
 
 ## Summary
 
-- **Total Features Tested**: 12
-- **Fully Implemented**: 9 (75%)
+- **Total Features Tracked**: 12
+- **Fully Implemented**: 12 (100%)
 - **Partially Implemented**: 0 (0%)
-- **Not Implemented**: 3 (25%)
+- **Not Implemented**: 0 (0%)
 
 ---
 
-## HIGH PRIORITY Features (Not Implemented)
+## HIGH PRIORITY Features
 
 ### 1. ✅ `\displaystyle` and `\textstyle` - **IMPLEMENTED**
 **Status**: ✅ Working
@@ -24,19 +26,21 @@ This document lists LaTeX features that are **not yet implemented** in ExtendedS
 
 ---
 
-### 2. ❌ `\middle` - Delimiter in Middle of Expression
-**Status**: ❌ Not Implemented
-**Error**: `Invalid command \middle`
-
+### 2. ✅ `\middle` - Delimiter in Middle of Expression - **IMPLEMENTED**
+**Status**: ✅ Working
 **Description**: Used with `\left` and `\right` to add delimiters in the middle of expressions
 
-**Examples**:
-```latex
-\left( \frac{a}{b} \middle| \frac{c}{d} \right)
-\left\{ x \middle\| y \right\}
-```
+**Test Results**: All tests passed (`testMiddleDelimiter`)
+- `\left( \frac{a}{b} \middle| \frac{c}{d} \right)` - ✅ Works (middle pipe)
+- `\left\{ x \middle\| y \right\}` - ✅ Works (middle double pipe)
+- `\left[ a \middle\\ b \right]` - ✅ Works (middle backslash)
 
 **Use Case**: Set notation, conditional expressions, piecewise functions with multiple sections
+
+**Implementation**: `MTInner` stores `middleDelimiters` (delimiter + index); the
+builder records each `\middle` position, and `MTTypesetter.makeLeftRight()`
+splits the inner content at each middle delimiter and stretches it to the full
+delimiter height. Middle delimiters round-trip through serialization.
 
 ---
 
@@ -78,9 +82,8 @@ This document lists LaTeX features that are **not yet implemented** in ExtendedS
 
 ---
 
-### 5. ❌ Spacing Commands: `\,`, `\:`, `\;`, `\!`
-**Status**: ❌ Partially Not Implemented
-**Error**: `Invalid command \:` (and likely others)
+### 5. ✅ Spacing Commands: `\,`, `\:`, `\;`, `\!` - **IMPLEMENTED**
+**Status**: ✅ Working
 
 **Description**: Fine-tuned horizontal spacing control
 
@@ -90,15 +93,21 @@ This document lists LaTeX features that are **not yet implemented** in ExtendedS
 | `\:` | Medium space | 4/18 em |
 | `\;` | Thick space | 5/18 em |
 | `\!` | Negative thin space | -3/18 em |
+| `\quad` | 1 em | 18/18 em |
+| `\qquad` | 2 em | 36/18 em |
 
-**Examples**:
-```latex
-a\,b                              % thin space
-\int\!\!\!\int f(x,y) dx dy      % tight double integral
-x \, y \: z \; w                  % mixed spacing
-```
+**Test Results**: All tests passed (`testSpacingCommands`)
+- `a\,b` - ✅ Works (thin space)
+- `a\:b` - ✅ Works (medium space; `\:` is a LaTeX alias for `\>`)
+- `a\;b` - ✅ Works (thick space)
+- `a\!b` - ✅ Works (negative thin space)
+- `\int\!\!\!\int f(x,y) dx dy` - ✅ Works (multiple negative spaces)
+- `x \, y \: z \; w` - ✅ Works (mixed spacing)
 
 **Use Case**: Fine typography control, integral notation, custom spacing
+
+**Implementation**: Each command maps to an `MTMathSpace` atom in the
+`MTMathAtomFactory` space table (3, 4, 5, -3, 18, 36 mu respectively).
 
 ---
 
@@ -200,23 +209,25 @@ x \, y \: z \; w                  % mixed spacing
 
 ## Implementation Priority Recommendations
 
-### Remaining High Priority Features
-1. **Spacing commands** (`\,`, `\:`, `\;`, `\!`) - Used in almost all advanced math
-2. **`\middle`** - Useful for conditional notation
+All tracked features are implemented. No remaining items from this evaluation set.
+
+Further LaTeX coverage (beyond these 12) can be added on demand; LaTeX math mode
+is large and this document is scoped to the originally evaluated feature set.
 
 ---
 
 ## Testing Coverage
 
-All tests use the `MTMathListBuilder.build(fromString:error:)` API and automatically skip with `XCTSkip` when features are not implemented.
+All tests use the `MTMathListBuilder.build(fromString:error:)` API and assert the
+parsed result directly (no feature is skipped).
 
 **Test File**: `Tests/ExtendedSwiftMathTests/MTMathListBuilderTests.swift`
 **Test Functions**:
 - `testDisplayStyle()` - ✅ Passed (IMPLEMENTED)
-- `testMiddleDelimiter()` - ⏭️ Skipped (not implemented)
+- `testMiddleDelimiter()` - ✅ Passed (IMPLEMENTED)
 - `testSubstack()` - ✅ Passed (IMPLEMENTED)
 - `testManualDelimiterSizing()` - ✅ Passed (IMPLEMENTED)
-- `testSpacingCommands()` - ⏭️ Skipped (not implemented)
+- `testSpacingCommands()` - ✅ Passed (IMPLEMENTED)
 - `testMultipleIntegrals()` - ✅ Passed (IMPLEMENTED)
 - `testContinuedFractions()` - ✅ Passed (IMPLEMENTED)
 - `testBoldsymbol()` - ✅ Passed (IMPLEMENTED)
@@ -225,19 +236,18 @@ All tests use the `MTMathListBuilder.build(fromString:error:)` API and automatic
 
 ---
 
-## Notes for Future Implementation
+## Implementation Notes (historical)
 
-### For `\middle`:
-- Needs integration with existing `\left...\right` delimiter pairing system
-- Should support all delimiter types that work with `\left` and `\right`
+### `\middle`:
+- Integrated with the existing `\left...\right` delimiter pairing system via
+  `MTInner.middleDelimiters`; supports the delimiter types valid for `\left`/`\right`.
 
-### For Spacing Commands:
-- Need to insert proper `MTMathSpace` atoms
-- Different space types: positive (`\,`, `\:`, `\;`) and negative (`\!`)
-- Some might already be partially implemented
+### Spacing Commands:
+- Implemented as `MTMathSpace` atoms in the `MTMathAtomFactory` space table.
+- Positive (`\,`, `\:`, `\;`, `\quad`, `\qquad`) and negative (`\!`) widths.
 
 ---
 
 *Generated: 2025-10-01*
 *Baseline reference: iosMath v0.9.5 feature set*
-*Last Updated: 2026-01-11 - Updated \boldsymbol as implemented; added example images*
+*Last Updated: 2026-05-31 - All 12 tracked features now implemented (\middle and spacing commands reconciled from stale ❌ to ✅)*

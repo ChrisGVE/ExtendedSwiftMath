@@ -686,13 +686,12 @@ label.displayErrorInline = true
 
 ## Future Enhancements
 
-Note this is not a complete implementation of LaTeX math mode. There are
-some pieces that are missing and may be included in future updates:
+Note this is not a complete implementation of LaTeX math mode — LaTeX's math
+syntax is vast and some less common commands are not covered. That said, all
+features previously tracked as missing (including `\middle` and the fine
+spacing commands `\:`, `\;`, `\!`) are now implemented.
 
-* `\middle` delimiter for use between `\left` and `\right`
-* Some fine spacing commands (`\:`, `\;`, `\!` - note that `\,` works)
-
-For a complete list of features and their implementation status, see [MISSING_FEATURES.md](MISSING_FEATURES.md).
+For the full list of features and their implementation status, see [MISSING_FEATURES.md](MISSING_FEATURES.md).
 
 ## License
 
