@@ -1042,10 +1042,25 @@ public struct MTMathListBuilder {
                 // that cannot round-trip.
                 if trimmed == "{" || trimmed == "}" { return ("", false) }
                 // Accept a single delimiter character only if it is a known,
-                // self-mapping delimiter (e.g. "(", ")", "[", "]", "|", "/"). This
-                // both rejects non-delimiters like "a" (which would later
-                // force-unwrap and crash during typesetting) and guarantees a clean
-                // round-trip, since the stored value re-parses to itself.
+                // *self-mapping* delimiter (e.g. "(", ")", "[", "]", "|", "/"):
+                // one whose own glyph IS the delimiter glyph. The stored value is
+                // re-rendered literally via `findGlyphForBoundary` (it draws the
+                // glyph of the stored character, not a boundary-mapped nucleus), so
+                // self-mapping is what makes both the render and the round-trip
+                // correct — the stored value draws the right glyph AND re-parses to
+                // itself.
+                //
+                // This deliberately excludes characters that map to a *different*
+                // delimiter glyph, notably "<"/">" (which map to the angle brackets
+                // U+2329/U+232A). Accepting them would either render the literal
+                // less-than/greater-than glyph (wrong glyph) or, if we stored the
+                // mapped nucleus, fail to round-trip (the angle code points are not
+                // re-parseable delimiter tokens, and their named forms \langle /
+                // \rangle are multi-char tokens rejected below by design). In real
+                // TeX "<"/">" are not valid delimiters either — \langle/\rangle are
+                // required — so this matches TeX scope. Likewise non-delimiters such
+                // as "a" are rejected (they would force-unwrap to a crash during
+                // typesetting). See also the bare-brace rejection above.
                 if trimmed.count == 1,
                    MTMathAtomFactory.boundary(forDelimiter: trimmed)?.nucleus == trimmed {
                     return (trimmed, true)

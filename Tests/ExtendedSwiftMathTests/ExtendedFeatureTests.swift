@@ -302,6 +302,21 @@ final class ExtendedFeatureTests: XCTestCase {
         XCTAssertNil(left)
     }
 
+    func testGenfracAngleDelimiterRejected() {
+        // "<"/">" map to the angle-bracket glyphs (U+2329/U+232A), i.e. they are
+        // NOT self-mapping. genfrac re-renders the stored delimiter literally and
+        // must round-trip to itself, so accepting "<"/">" would render the wrong
+        // glyph or break round-trip. They are out of scope (real TeX requires
+        // \langle/\rangle, which are multi-char tokens also rejected). Confirm they
+        // are rejected rather than silently mis-rendered.
+        for delim in ["<", ">"] {
+            var error: NSError? = nil
+            let list = MTMathListBuilder.build(fromString: "\\genfrac{\(delim)}{)}{0pt}{}{n}{k}", error: &error)
+            XCTAssertNotNil(error, "expected \(delim) to be rejected as a genfrac delimiter")
+            XCTAssertNil(list)
+        }
+    }
+
     func testGenfracRendering() {
         for latex in ["\\genfrac{(}{)}{0pt}{}{n}{k}",
                       "\\genfrac{[}{]}{2pt}{1}{x}{y}",
