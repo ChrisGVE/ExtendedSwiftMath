@@ -589,8 +589,14 @@ public struct MTMathListBuilder {
                 }
                 if atom.type == .fraction {
                     if let frac = atom as? MTFraction {
-                        if frac.forcedStyle != nil || frac.ruleThickness != nil {
-                            // Serialize as \genfrac to preserve explicit thickness/style.
+                        // A ruled fraction that also carries delimiters cannot be
+                        // expressed by \frac (no delimiters) or \binom (no rule), so it
+                        // must also round-trip through \genfrac.
+                        let ruledWithDelimiters = frac.hasRule
+                            && !(frac.leftDelimiter.isEmpty && frac.rightDelimiter.isEmpty)
+                            && !frac.isContinuedFraction
+                        if frac.forcedStyle != nil || frac.ruleThickness != nil || ruledWithDelimiters {
+                            // Serialize as \genfrac to preserve explicit thickness/style/delimiters.
                             let thickness: String
                             if let t = frac.ruleThickness {
                                 let num = (t == t.rounded()) ? String(format: "%.0f", t) : "\(t)"
@@ -1022,14 +1028,15 @@ public struct MTMathListBuilder {
             frac.leftDelimiter = leftDelim ?? ""
             frac.rightDelimiter = rightDelim ?? ""
 
-            // Thickness: empty -> font default (with rule); explicit -> use value,
-            // hasRule true only when thickness > 0.
-            if let t = thicknessStr, !t.isEmpty {
-                if let parsed = self.parseLength(t) {
+            // Thickness: empty (or whitespace-only) -> font default (with rule);
+            // explicit -> use value, hasRule true only when thickness > 0.
+            let thicknessTrimmed = (thicknessStr ?? "").trimmingCharacters(in: .whitespaces)
+            if !thicknessTrimmed.isEmpty {
+                if let parsed = self.parseLength(thicknessTrimmed) {
                     frac.ruleThickness = parsed
                     frac.hasRule = parsed > 0
                 } else {
-                    self.setError(.invalidCommand, message: "Invalid thickness for \\genfrac: \(t)")
+                    self.setError(.invalidCommand, message: "Invalid thickness for \\genfrac: \(thicknessTrimmed)")
                     return nil
                 }
             } else {
@@ -1037,12 +1044,14 @@ public struct MTMathListBuilder {
                 frac.hasRule = true
             }
 
-            // Style: 0=display, 1=text, 2=script, 3=scriptscript. Empty -> inherit.
-            if let s = styleStr, !s.isEmpty {
-                if let styleNum = Int(s.trimmingCharacters(in: .whitespaces)), let forced = MTLineStyle(rawValue: styleNum) {
+            // Style: 0=display, 1=text, 2=script, 3=scriptscript. Empty (or
+            // whitespace-only) -> inherit.
+            let styleTrimmed = (styleStr ?? "").trimmingCharacters(in: .whitespaces)
+            if !styleTrimmed.isEmpty {
+                if let styleNum = Int(styleTrimmed), let forced = MTLineStyle(rawValue: styleNum) {
                     frac.forcedStyle = forced
                 } else {
-                    self.setError(.invalidCommand, message: "Invalid style for \\genfrac: \(s)")
+                    self.setError(.invalidCommand, message: "Invalid style for \\genfrac: \(styleTrimmed)")
                     return nil
                 }
             }

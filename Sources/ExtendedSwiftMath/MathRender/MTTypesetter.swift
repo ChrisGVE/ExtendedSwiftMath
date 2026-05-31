@@ -2529,17 +2529,19 @@ class MTTypesetter {
     // MARK: - Over/Under annotations
 
     func makeOverUnder(_ overUnder: MTOverUnder) -> MTDisplay {
-        // The base is laid out in the current style; the annotations one level smaller (script style).
+        // The base is laid out in the current style; the annotations one level smaller.
+        // Use scriptStyle() rather than style.inc() so that an over/under nested inside a
+        // script does not wrap back to display style (inc() wraps .scriptOfScript -> .display).
         let baseDisplay = MTTypesetter.createLineForMathList(overUnder.base, font: font, style: style, cramped: cramped)!
-        let scriptStyle = style.inc()
+        let annotationStyle = self.scriptStyle()
 
         var upperDisplay: MTMathListDisplay? = nil
         var lowerDisplay: MTMathListDisplay? = nil
         if let over = overUnder.over {
-            upperDisplay = MTTypesetter.createLineForMathList(over, font: font, style: scriptStyle, cramped: cramped)
+            upperDisplay = MTTypesetter.createLineForMathList(over, font: font, style: annotationStyle, cramped: cramped)
         }
         if let under = overUnder.under {
-            lowerDisplay = MTTypesetter.createLineForMathList(under, font: font, style: scriptStyle, cramped: true)
+            lowerDisplay = MTTypesetter.createLineForMathList(under, font: font, style: annotationStyle, cramped: true)
         }
 
         let opsDisplay = MTLargeOpLimitsDisplay(withNucleus: baseDisplay, upperLimit: upperDisplay, lowerLimit: lowerDisplay, limitShift: 0, extraPadding: 0)
