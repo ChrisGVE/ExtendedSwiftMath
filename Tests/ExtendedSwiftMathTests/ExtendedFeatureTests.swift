@@ -47,7 +47,7 @@ final class ExtendedFeatureTests: XCTestCase {
         XCTAssertNil(ou.over)
         XCTAssertNotNil(ou.under)
         XCTAssertFalse(ou.isStackrel)
-        XCTAssertEqual(MTMathListBuilder.mathListToString(list), "\\underset{x\\to 0}{\\lim }")
+        XCTAssertEqual(MTMathListBuilder.mathListToString(list), "\\underset{x\\rightarrow 0}{\\lim }")
     }
 
     func testStackrel() {

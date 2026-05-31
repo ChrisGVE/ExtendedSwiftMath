@@ -1384,6 +1384,9 @@ class MTTypesetter {
                     arrowDisplay.position = currentPosition
                     displayAtoms.append(arrowDisplay)
                     currentPosition.x += arrowDisplay.width
+                    if atom.subScript != nil || atom.superScript != nil {
+                        self.makeScripts(atom, display: arrowDisplay, index: UInt(arrowAtom.indexRange.location), delta: 0)
+                    }
 
                 case .ordinary, .binaryOperator, .relation, .open, .close, .placeholder, .punctuation:
                     // the rendering for all the rest is pretty similar
