@@ -473,8 +473,8 @@ class MTTypesetter {
             // Italic correction is intentionally NOT applied here. Preprocessing
             // only handles TeX Rule 14 (merging ordinary atoms); italic correction
             // is a glyph-level metric applied in the second pass during display
-            // layout — see getItalicCorrection() use in makeScripts/script
-            // positioning (e.g. the `delta` computations below).
+            // layout — see getItalicCorrection() in createDisplayAtoms (the
+            // `delta` value passed into makeScripts for script positioning).
             prevNode = atom
             preprocessed.append(atom)
         }
