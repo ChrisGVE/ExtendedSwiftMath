@@ -283,6 +283,15 @@ final class ExtendedFeatureTests: XCTestCase {
         XCTAssertNil(multi)
     }
 
+    func testGenfracNonDelimiterCharRejected() {
+        var error: NSError? = nil
+        // A single but non-delimiter character (e.g. "a") must be rejected at parse
+        // time rather than accepted and force-unwrapped to a crash during layout.
+        let list = MTMathListBuilder.build(fromString: "\\genfrac{a}{b}{0pt}{}{n}{k}", error: &error)
+        XCTAssertNotNil(error)
+        XCTAssertNil(list)
+    }
+
     func testGenfracRendering() {
         for latex in ["\\genfrac{(}{)}{0pt}{}{n}{k}",
                       "\\genfrac{[}{]}{2pt}{1}{x}{y}",

@@ -1034,7 +1034,15 @@ public struct MTMathListBuilder {
             func normalizeGenfracDelimiter(_ raw: String?) -> (value: String, ok: Bool) {
                 let trimmed = (raw ?? "").trimmingCharacters(in: .whitespaces)
                 if trimmed.isEmpty || trimmed == "." { return ("", true) }
-                if trimmed.count == 1 { return (trimmed, true) }
+                // Accept a single delimiter character only if it is a known,
+                // self-mapping delimiter (e.g. "(", ")", "[", "]", "{", "}", "|",
+                // "/"). This both rejects non-delimiters like "a" (which would later
+                // force-unwrap and crash during typesetting) and guarantees a clean
+                // round-trip, since the stored value re-parses to itself.
+                if trimmed.count == 1,
+                   MTMathAtomFactory.boundary(forDelimiter: trimmed)?.nucleus == trimmed {
+                    return (trimmed, true)
+                }
                 return ("", false)
             }
             let (leftValue, leftOK) = normalizeGenfracDelimiter(leftDelim)
