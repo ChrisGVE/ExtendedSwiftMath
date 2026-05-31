@@ -1025,8 +1025,28 @@ public struct MTMathListBuilder {
             let thicknessStr = self.readBracedText()
             let styleStr = self.readBracedText()
 
-            frac.leftDelimiter = leftDelim ?? ""
-            frac.rightDelimiter = rightDelim ?? ""
+            // Normalize each delimiter argument to a canonical single delimiter
+            // character. Empty or "." means "no delimiter"; a name such as \langle
+            // or a single character is resolved through the delimiter factory so
+            // that rendering (which uses the stored character) and round-tripping
+            // both work. Anything else is a parse error.
+            func normalizeGenfracDelimiter(_ raw: String?) -> (value: String, ok: Bool) {
+                let trimmed = (raw ?? "").trimmingCharacters(in: .whitespaces)
+                if trimmed.isEmpty || trimmed == "." { return ("", true) }
+                let name = trimmed.hasPrefix("\\") ? String(trimmed.dropFirst()) : trimmed
+                if let boundary = MTMathAtomFactory.boundary(forDelimiter: name) {
+                    return (boundary.nucleus, true)
+                }
+                return ("", false)
+            }
+            let (leftValue, leftOK) = normalizeGenfracDelimiter(leftDelim)
+            let (rightValue, rightOK) = normalizeGenfracDelimiter(rightDelim)
+            if !leftOK || !rightOK {
+                self.setError(.invalidDelimiter, message: "Invalid delimiter for \\genfrac")
+                return nil
+            }
+            frac.leftDelimiter = leftValue
+            frac.rightDelimiter = rightValue
 
             // Thickness: empty (or whitespace-only) -> font default (with rule);
             // explicit -> use value, hasRule true only when thickness > 0.
