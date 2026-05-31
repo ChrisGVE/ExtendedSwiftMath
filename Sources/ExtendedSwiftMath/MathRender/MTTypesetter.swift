@@ -2406,6 +2406,14 @@ class MTTypesetter {
 
         let glyphHeight: CGFloat
 
+        // Typeset the inner content at most once. createLineForMathList here does not
+        // finalize (copy) the list, so the same atom objects are reused; typesetting
+        // mutates some atom types in place (e.g. a table atom becomes .inner for
+        // spacing). Re-typesetting the same objects would then misroute them and
+        // force-cast to the wrong class, so we compute the display a single time and
+        // reuse it for both the delimiter-height calculation and the laid-out content.
+        var innerListDisplay: MTMathListDisplay? = nil
+
         // Check if we have an explicit delimiter height (from \big, \Big, etc.)
         if let delimiterMultiplier = inner!.delimiterHeight {
             // delimiterHeight is a multiplier (e.g., 1.2, 1.8, 2.4, 3.0)
@@ -2413,7 +2421,7 @@ class MTTypesetter {
             glyphHeight = styleFont.fontSize * delimiterMultiplier
         } else {
             // Calculate height based on inner content (for \left...\right)
-            let innerListDisplay = MTTypesetter.createLineForMathList(inner!.innerList, font:font, style:style, cramped:cramped, spaced:true, maxWidth:maxWidth)
+            innerListDisplay = MTTypesetter.createLineForMathList(inner!.innerList, font:font, style:style, cramped:cramped, spaced:true, maxWidth:maxWidth)
             let axisHeight = styleFont.mathTable!.axisHeight
             // delta is the max distance from the axis
             let delta = max(innerListDisplay!.ascent - axisHeight, innerListDisplay!.descent + axisHeight);
@@ -2438,7 +2446,12 @@ class MTTypesetter {
         if inner!.delimiterHeight == nil {
             let middles = inner!.middleDelimiters.sorted { $0.index < $1.index }
             if middles.isEmpty {
-                let innerListDisplay = MTTypesetter.createLineForMathList(inner!.innerList, font:font, style:style, cramped:cramped, spaced:true, maxWidth:maxWidth)
+                // Reuse the display already typeset above for the height calculation
+                // (delimiterHeight == nil guarantees it was created); only fall back to
+                // typesetting if it is somehow absent.
+                if innerListDisplay == nil {
+                    innerListDisplay = MTTypesetter.createLineForMathList(inner!.innerList, font:font, style:style, cramped:cramped, spaced:true, maxWidth:maxWidth)
+                }
                 innerListDisplay!.position = position;
                 position.x += innerListDisplay!.width;
                 innerElements.append(innerListDisplay!)
