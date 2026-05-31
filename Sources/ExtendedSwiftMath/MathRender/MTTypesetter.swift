@@ -1369,6 +1369,9 @@ class MTTypesetter {
                     displayAtoms.append(overlapDisplay)
                     // overlapDisplay.width is always 0, so currentPosition.x does not advance.
                     currentPosition.x += overlapDisplay.width
+                    if atom.subScript != nil || atom.superScript != nil {
+                        self.makeScripts(atom, display: overlapDisplay, index: UInt(overlapAtom.indexRange.location), delta: 0)
+                    }
 
                 case .extensibleArrow:
                     if currentLine.length > 0 {

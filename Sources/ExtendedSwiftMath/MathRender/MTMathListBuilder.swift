@@ -1025,24 +1025,22 @@ public struct MTMathListBuilder {
             let thicknessStr = self.readBracedText()
             let styleStr = self.readBracedText()
 
-            // Normalize each delimiter argument to a canonical single delimiter
-            // character. Empty or "." means "no delimiter"; a name such as \langle
-            // or a single character is resolved through the delimiter factory so
-            // that rendering (which uses the stored character) and round-tripping
-            // both work. Anything else is a parse error.
+            // Delimiter arguments are scoped to a single delimiter character (the
+            // forms used by \genfrac in practice: "(", ")", "[", "]", "|", etc.).
+            // Empty or "." means "no delimiter". This is stored verbatim and
+            // round-trips cleanly (the same convention used by \binom). Multi-
+            // character / named delimiter tokens (e.g. \langle) are not supported
+            // here and produce a parse error rather than a wrong glyph.
             func normalizeGenfracDelimiter(_ raw: String?) -> (value: String, ok: Bool) {
                 let trimmed = (raw ?? "").trimmingCharacters(in: .whitespaces)
                 if trimmed.isEmpty || trimmed == "." { return ("", true) }
-                let name = trimmed.hasPrefix("\\") ? String(trimmed.dropFirst()) : trimmed
-                if let boundary = MTMathAtomFactory.boundary(forDelimiter: name) {
-                    return (boundary.nucleus, true)
-                }
+                if trimmed.count == 1 { return (trimmed, true) }
                 return ("", false)
             }
             let (leftValue, leftOK) = normalizeGenfracDelimiter(leftDelim)
             let (rightValue, rightOK) = normalizeGenfracDelimiter(rightDelim)
             if !leftOK || !rightOK {
-                self.setError(.invalidDelimiter, message: "Invalid delimiter for \\genfrac")
+                self.setError(.invalidDelimiter, message: "Invalid delimiter for \\genfrac (use a single delimiter character)")
                 return nil
             }
             frac.leftDelimiter = leftValue
