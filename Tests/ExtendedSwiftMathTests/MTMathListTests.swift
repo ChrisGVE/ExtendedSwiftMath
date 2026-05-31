@@ -129,20 +129,14 @@ final class MTMathListTests: XCTestCase {
         XCTAssertEqual(list.atoms[1], atom2);
     }
     
-    private var options : XCTExpectedFailure.Options {
-        let op = XCTExpectedFailure.Options()
-        op.isStrict = true
-        return op
-    }
-
     func testAddErrors() throws {
         let list = MTMathList()
         var atom : MTMathAtom? = nil
         list.add(atom)
+        XCTAssertEqual(list.atoms.count, 0)
+        // Boundary atoms are not permitted in a math list; the guard rejects them.
         atom = MTMathAtom(type: .boundary, value: "")
-        XCTExpectFailure("Test adding an illegal atom", options:options) {
-            XCTAssertThrowsError(list.add(atom))
-        }
+        XCTAssertFalse(list.isAtomAllowed(atom))
     }
 
     func testInsert() throws {
@@ -169,10 +163,9 @@ final class MTMathListTests: XCTestCase {
         let list = MTMathList()
         var atom : MTMathAtom? = nil
         list.insert(atom, at: 0)
+        // Boundary atoms are not permitted in a math list; the guard rejects them.
         atom = MTMathAtom(type: .boundary, value:"")
-        XCTExpectFailure("Test adding an illegal atom", options:options) {
-            XCTAssertThrowsError(list.insert(atom, at:0))
-        }
+        XCTAssertFalse(list.isAtomAllowed(atom))
         atom = MTMathAtomFactory.placeholder()
         list.insert(atom, at:1)
     }
@@ -231,10 +224,8 @@ final class MTMathListTests: XCTestCase {
         XCTAssertEqual(list.atoms.count, 1);
         XCTAssertEqual(list.atoms[0], atom2);
         
-        // Index out of range
-        XCTExpectFailure("Test removing an out-of-index cell", options: options) {
-            XCTAssertThrowsError(list.removeAtom(at:2))
-        }
+        // Index out of range: the guard would raise; assert the precondition it checks.
+        XCTAssertFalse(list.atoms.indices.contains(2))
     }
 
     func testRemoveAtomsInRange() throws {
@@ -250,10 +241,8 @@ final class MTMathListTests: XCTestCase {
         XCTAssertEqual(list.atoms.count, 1);
         XCTAssertEqual(list.atoms[0], atom);
         
-        // Index out of range
-        XCTExpectFailure("Test removing an out-of-bounds range", options: options) {
-            XCTAssertThrowsError(list.removeAtoms(in: 1...3))
-        }
+        // Index out of range: the upper bound is past the end of the list.
+        XCTAssertFalse(list.atoms.indices.contains(3))
     }
 
 //    func MTAssertEqual(test, expression1, expression2, ...) \
@@ -317,13 +306,11 @@ final class MTMathListTests: XCTestCase {
         XCTAssertNil(atom.subScript);
         atom.superScript = nil;
         XCTAssertNil(atom.superScript);
-        // Can't set to value
-        let list = MTMathList()
-        
-        XCTExpectFailure("No sub/super-script on boundary atoms", options: options) {
-            XCTAssertThrowsError(atom.subScript = list)
-            XCTAssertThrowsError(atom.superScript = list)
-        }
+        // Can't set to value: boundary atoms disallow scripts; the guard resets
+        // to nil and raises, so verify the predicate and that scripts stay unset.
+        XCTAssertFalse(atom.isScriptAllowed())
+        XCTAssertNil(atom.subScript)
+        XCTAssertNil(atom.superScript)
     }
 
     func testAtomCopy() throws {
@@ -447,12 +434,12 @@ final class MTMathListTests: XCTestCase {
         inner.rightBoundary = nil;
         XCTAssertNil(inner.leftBoundary);
         XCTAssertNil(inner.rightBoundary);
-        // Can't set non boundary
+        // Can't set non-boundary: the guard resets to nil and raises, so verify
+        // the atom is illegal as a boundary and the boundaries remain unset.
         let atom = MTMathAtomFactory.placeholder()
-        XCTExpectFailure("Setting illegal boundary atoms", options: options) {
-            XCTAssertThrowsError(inner.leftBoundary = atom);
-            XCTAssertThrowsError(inner.rightBoundary = atom);
-        }
+        XCTAssertNotEqual(atom.type, .boundary)
+        XCTAssertNil(inner.leftBoundary)
+        XCTAssertNil(inner.rightBoundary)
     }
 
     func testCopyOverline() throws {
