@@ -648,8 +648,30 @@ public struct MTMathListBuilder {
                                 str += "\\left. "
                             }
                             
-                            str += mathListToString(inner.innerList!)
-                            
+                            // Interleave any \middle delimiters at their recorded
+                            // atom indices so they round-trip (mirrors the segment
+                            // splitting the typesetter performs in makeLeftRight).
+                            let middles = inner.middleDelimiters.sorted { $0.index < $1.index }
+                            if middles.isEmpty {
+                                str += mathListToString(inner.innerList!)
+                            } else {
+                                let allAtoms = inner.innerList?.atoms ?? []
+                                var segStart = 0
+                                func emitSegment(_ from: Int, _ to: Int) {
+                                    guard from < to else { return }
+                                    let seg = MTMathList()
+                                    for atom in allAtoms[from..<to] { seg.add(atom) }
+                                    str += mathListToString(seg)
+                                }
+                                for middle in middles {
+                                    let clamped = max(segStart, min(middle.index, allAtoms.count))
+                                    emitSegment(segStart, clamped)
+                                    str += "\\middle\(delimToString(delim: middle.delimiter)) "
+                                    segStart = clamped
+                                }
+                                emitSegment(segStart, allAtoms.count)
+                            }
+
                             if inner.rightBoundary != nil {
                                 str += "\\right\(delimToString(delim: inner.rightBoundary!)) "
                             } else {

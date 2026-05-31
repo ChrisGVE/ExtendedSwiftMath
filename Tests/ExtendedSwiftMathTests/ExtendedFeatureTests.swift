@@ -302,6 +302,33 @@ final class ExtendedFeatureTests: XCTestCase {
         XCTAssertNil(left)
     }
 
+    // MARK: - middle
+
+    func testMiddleRoundTrips() {
+        // \middle delimiters inside \left...\right must survive serialization.
+        let list = build("\\left( a \\middle| b \\right)")
+        let inner = list.atoms[0] as! MTInner
+        XCTAssertEqual(inner.middleDelimiters.count, 1)
+        let s1 = MTMathListBuilder.mathListToString(list)
+        XCTAssertTrue(s1.contains("\\middle|"), "expected \\middle| in serialization, got: \(s1)")
+        // Re-parsing the serialized form preserves the middle delimiter, and a
+        // second serialization is stable (true round-trip).
+        let list2 = build(s1)
+        let inner2 = list2.atoms[0] as! MTInner
+        XCTAssertEqual(inner2.middleDelimiters.count, 1)
+        XCTAssertEqual(MTMathListBuilder.mathListToString(list2), s1)
+    }
+
+    func testMultipleMiddleRoundTrips() {
+        let list = build("\\left( a \\middle| b \\middle/ c \\right)")
+        let inner = list.atoms[0] as! MTInner
+        XCTAssertEqual(inner.middleDelimiters.count, 2)
+        let s1 = MTMathListBuilder.mathListToString(list)
+        let list2 = build(s1)
+        XCTAssertEqual((list2.atoms[0] as! MTInner).middleDelimiters.count, 2)
+        XCTAssertEqual(MTMathListBuilder.mathListToString(list2), s1)
+    }
+
     func testGenfracAngleDelimiterRejected() {
         // "<"/">" map to the angle-bracket glyphs (U+2329/U+232A), i.e. they are
         // NOT self-mapping. genfrac re-renders the stored delimiter literally and
