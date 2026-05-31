@@ -1322,6 +1322,15 @@ class MTTypesetter {
                     } else {
                         self.addInterElementSpace(prevNode, currentType:.inner)
                     }
+                    // HAZARD: this mutates the atom's type in place (so the next
+                    // atom's inter-element spacing treats the table as .inner).
+                    // Because createLineForMathList does NOT finalize/copy the list,
+                    // typesetting the same atoms a second time would re-enter this
+                    // switch with type .inner and force-cast the MTMathTable via
+                    // `as! MTInner`, trapping with SIGABRT. Any helper that lays out
+                    // a shared (non-finalized) list MUST typeset it at most once —
+                    // see makeLeftRight, which reuses its single display rather than
+                    // re-typesetting for the height pass and the content pass.
                     atom.type = .inner
 
                     display!.position = currentPosition
