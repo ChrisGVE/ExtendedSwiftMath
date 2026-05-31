@@ -292,6 +292,16 @@ final class ExtendedFeatureTests: XCTestCase {
         XCTAssertNil(list)
     }
 
+    func testGenfracBraceDelimiterRejected() {
+        // Bare "{"/"}" are grouping characters and cannot round-trip as genfrac
+        // delimiters (they would re-serialize as \genfrac{{}... and break brace
+        // balancing). They are rejected; real LaTeX uses \{/\} for brace delims.
+        var error: NSError? = nil
+        let left = MTMathListBuilder.build(fromString: "\\genfrac{\\{}{)}{0pt}{}{n}{k}", error: &error)
+        XCTAssertNotNil(error)
+        XCTAssertNil(left)
+    }
+
     func testGenfracRendering() {
         for latex in ["\\genfrac{(}{)}{0pt}{}{n}{k}",
                       "\\genfrac{[}{]}{2pt}{1}{x}{y}",

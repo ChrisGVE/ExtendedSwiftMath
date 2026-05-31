@@ -1034,9 +1034,16 @@ public struct MTMathListBuilder {
             func normalizeGenfracDelimiter(_ raw: String?) -> (value: String, ok: Bool) {
                 let trimmed = (raw ?? "").trimmingCharacters(in: .whitespaces)
                 if trimmed.isEmpty || trimmed == "." { return ("", true) }
+                // Braces are grouping characters: a bare "{" or "}" cannot be
+                // stored as a delimiter and re-serialized as `\genfrac{{}...`
+                // without breaking `readBracedText`'s brace balancing, so it would
+                // not round-trip. Real LaTeX spells brace delimiters as `\{`/`\}`
+                // anyway. Reject bare braces explicitly rather than accept a value
+                // that cannot round-trip.
+                if trimmed == "{" || trimmed == "}" { return ("", false) }
                 // Accept a single delimiter character only if it is a known,
-                // self-mapping delimiter (e.g. "(", ")", "[", "]", "{", "}", "|",
-                // "/"). This both rejects non-delimiters like "a" (which would later
+                // self-mapping delimiter (e.g. "(", ")", "[", "]", "|", "/"). This
+                // both rejects non-delimiters like "a" (which would later
                 // force-unwrap and crash during typesetting) and guarantees a clean
                 // round-trip, since the stored value re-parses to itself.
                 if trimmed.count == 1,
