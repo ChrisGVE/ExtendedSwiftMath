@@ -4,6 +4,13 @@
 
 ExtendedSwiftMath supports automatic line breaking (multiline display) for mathematical equations. This document provides technical details about the implementation, supported cases, limitations, and potential areas for improvement.
 
+> **Note on line numbers:** The `MTTypesetter.swift:NNN` / "Lines NNN" references
+> throughout this document are *historical* — they reflect the source at the time
+> each note was written and have since drifted. Treat the named functions and
+> `switch` cases (e.g. `createDisplayAtoms()`, `makeLeftRight()`,
+> `shouldBreakBeforeDisplay()`, the `.table`/`.accent` cases) as the authoritative
+> anchors; ignore the exact numbers.
+
 ## Implementation Architecture
 
 ### Two-Tier Breaking System
@@ -180,7 +187,7 @@ ExtendedSwiftMath supports automatic line breaking (multiline display) for mathe
 ```
 **Now works perfectly**: Small matrices stay inline when they fit within width constraints.
 
-**Implementation**: Lines 899-916 in MTTypesetter.swift
+**Implementation**: the `.table` case in `createDisplayAtoms()` (MTTypesetter.swift)
 - Creates matrix display first
 - Checks if adding it would exceed maxWidth
 - Only breaks to new line if necessary
@@ -194,7 +201,7 @@ ExtendedSwiftMath supports automatic line breaking (multiline display) for mathe
 ```
 **Now works much better**: Atoms with superscripts and subscripts now participate in intelligent width-based breaking!
 
-**Implementation**: Lines 1123-1137 in MTTypesetter.swift
+**Implementation**: the scripted-ordinary handling in `createDisplayAtoms()`, using `estimateAtomWidthWithScripts()` (MTTypesetter.swift)
 - Estimates total width of atom including scripts before adding
 - Checks if adding scripted atom would exceed maxWidth
 - Only breaks to new line if necessary
@@ -226,7 +233,7 @@ The following cases that previously forced line breaks now work perfectly:
 
 ### ℹ️ Special Note: Accents
 
-**Code location**: `MTTypesetter.swift:751-824`
+**Code location**: `makeAccent()` and the `.accent` case in `createDisplayAtoms()` (MTTypesetter.swift)
 
 ```swift
 "\\hat{x} + \\tilde{y}"
